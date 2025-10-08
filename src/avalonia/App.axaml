@@ -1,0 +1,19 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:top.z7workbench.loggi"
+             xmlns:converters="using:top.z7workbench.loggi.Converters"
+             x:Class="top.z7workbench.loggi.App">
+    <Application.Styles>
+        <FluentTheme />
+    </Application.Styles>
+    
+    <Application.DataTemplates>
+        <local:ViewLocator/>
+    </Application.DataTemplates>
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <converters:HighlightConverter x:Key="HighlightConverter" />
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

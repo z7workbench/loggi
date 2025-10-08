@@ -1,0 +1,185 @@
+# Build results
+bin/
+obj/
+out/
+
+# Rust
+target/
+Cargo.lock
+**/Cargo.lock
+rust-toolchain
+rust-toolchain.toml
+
+# IDE
+.vs/
+.vscode/
+*.userprefs
+*.user
+*.suo
+*.userosscache
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Icon?
+desktop.ini
+
+# Logs
+*.log
+!src/avalonia/ViewModels/*.log  # Include log files that are part of the source
+
+# User-specific files
+.userprefs
+.user
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# IDE specific
+*.swp
+*.swo
+*~
+
+# Debug files
+*.stackdump
+
+# .NET / C# / Avalonia
+**/bin/Debug/
+**/bin/Release/
+**/bin/x64/Debug/
+**/bin/x64/Release/
+**/bin/x86/Debug/
+**/bin/x86/Release/
+**/bin/AnyCPU/Debug/
+**/bin/AnyCPU/Release/
+**/obj/Debug/
+**/obj/Release/
+**/obj/x64/Debug/
+**/obj/x64/Release/
+**/obj/x86/Debug/
+**/obj/x86/Release/
+*.userosscache
+*.csproj.user
+*.vbproj.user
+*.sln.docstates
+**/[Bb]in/
+**/[Oo]bj/
+**/[Oo]ut/
+**/Debug/
+**/Release/
+**/x64/
+**/x86/
+**/ARM/
+**/ARM64/
+packages/
+.nuget/
+.nuget/packages/
+**/packages/
+*.TestResults/
+**/*.TestResults/
+**/TestResults/
+**/artifacts/
+**/artifacts/
+**/*.trx
+**/*.coverage
+**/ServiceHub/
+**/ServiceHub.log
+**/StyleCop.Cache
+
+# Local config/user settings
+**/appsettings.*.json
+**/web.config.user
+**/secrets.*
+
+# Dynamic Link Libraries (DLLs) and executables (except specific ones in code)
+**/*.dll
+**/*.exe
+**/*.so
+**/*.dylib
+!src/avalonia/libloggi_core.dylib  # Keep this specific dylib if it's part of the source
+
+# Nupkg and Nuget packages
+**/*.nupkg
+**/*.nuspec
+
+# Roslyn
+**/.roslyn/
+
+# Publish artifacts
+**/publish/
+
+# .NET Core
+**/core/
+
+# Build/
+**/[Bb]uild/
+**/BUILD/
+**/Build/
+
+# IDE - Visual Studio Code
+.vscode/tasks.json
+.vscode/launch.json
+.vscode/settings.json
+.vscode/extensions.json
+
+# IDE - JetBrains
+*.ReSharper
+*.resharper
+_ReSharper.*/
+*.[Rr]e[Ss]harper
+*.[Rr]e[Ss]harper.[Dd]isable
+*.DotSettings
+*.user.DotSettings
+*.VisualState.Setting
+**/JetBrains/
+**/.idea/
+
+# IDE - Eclipse
+.metadata
+bin/**
+tmp/**
+*.tmp
+*.bak
+*.swp
+*~
+.project
+.classpath
+.settings/
+.loadpath
+.externalToolBuilders/
+.cproject
+.cppproject
+.project
+.launch
+.settings/
+.factorypath
+
+# IDE - Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# IDE - Vim
+*.swp
+*.swo
+*~
+.netrwhist
+
+# IDE - Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# IDE - Acme
+acme/

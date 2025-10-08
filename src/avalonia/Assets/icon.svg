@@ -1,0 +1,32 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Computer screen -->
+  <rect x="64" y="64" width="384" height="320" rx="20" ry="20" fill="#2c3e50" stroke="#34495e" stroke-width="8"/>
+  <!-- Screen content area -->
+  <rect x="84" y="96" width="344" height="256" rx="8" ry="8" fill="#ecf0f1"/>
+  
+  <!-- Doge face elements -->
+  <!-- Face base -->
+  <circle cx="256" cy="224" r="80" fill="#fecb4a"/>
+  
+  <!-- Eyes -->
+  <ellipse cx="220" cy="200" rx="18" ry="22" fill="#2c3e50"/>
+  <ellipse cx="292" cy="200" rx="18" ry="22" fill="#2c3e50"/>
+  
+  <!-- Eye highlights -->
+  <circle cx="220" cy="190" r="6" fill="#ffffff"/>
+  <circle cx="292" cy="190" r="6" fill="#ffffff"/>
+  
+  <!-- Nose -->
+  <ellipse cx="256" cy="230" rx="12" ry="8" fill="#e74c3c"/>
+  
+  <!-- Mouth -->
+  <path d="M 236 260 Q 256 280 276 260" stroke="#2c3e50" stroke-width="4" fill="none"/>
+  
+  <!-- Typing dots on the screen (representing computer) -->
+  <circle cx="120" cy="320" r="6" fill="#3498db"/>
+  <circle cx="140" cy="320" r="6" fill="#9b59b6"/>
+  <circle cx="160" cy="320" r="6" fill="#e67e22"/>
+  
+  <!-- Screen border highlight -->
+  <rect x="68" y="68" width="376" height="24" rx="12" ry="12" fill="#3498db" opacity="0.8"/>
+</svg>

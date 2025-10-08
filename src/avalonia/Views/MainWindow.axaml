@@ -1,0 +1,242 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+        xmlns:converters="clr-namespace:top.z7workbench.loggi.Converters"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="top.z7workbench.loggi.Views.MainWindow"
+        Title="{Binding AppName}">
+  <Window.Resources>
+    <x:Double x:Key="LineNumberWidth">60</x:Double>
+    <converters:LineNumberToStringConverter x:Key="LineNumberConverter"/>
+    <converters:LineNumberWithBracketsConverter x:Key="LineNumberWithBracketsConverter"/>
+    <converters:HighlightConverter x:Key="HighlightConverter"/>
+    <converters:ColorMarkConverter x:Key="ColorMarkConverter"/>
+  </Window.Resources>
+  <DockPanel>
+    <!-- Menu Bar -->
+    <Menu DockPanel.Dock="Top">
+      <MenuItem Header="{converters:Localization MenuFile}">
+        <MenuItem Name="OpenFileMenuItem" Header="{converters:Localization MenuOpen}" InputGesture="Ctrl+O" />
+        <MenuItem Name="SettingsMenuItem" Header="{converters:Localization MenuSettings}" InputGesture="Ctrl+," />
+        <MenuItem Name="ExitMenuItem" Header="{converters:Localization MenuExit}" InputGesture="Ctrl+Q" />
+      </MenuItem>
+      <MenuItem Header="{converters:Localization MenuView}">
+        <MenuItem Name="RefreshMenuItem" Header="{converters:Localization MenuRefresh}" InputGesture="F5" />
+      </MenuItem>
+      <MenuItem Header="{converters:Localization MenuHelp}">
+        <MenuItem Name="AboutMenuItem" Header="{converters:Localization MenuAbout}" />
+      </MenuItem>
+    </Menu>
+    
+    <!-- Status Bar -->
+    <Border DockPanel.Dock="Bottom" Background="#2D2D30" Padding="5">
+      <Grid ColumnDefinitions="100, *, 150">
+        <TextBlock Grid.Column="0" Name="StatusTextBlock" Text="{converters:Localization StatusBarReady}" VerticalAlignment="Center" Foreground="White" />
+        <TextBlock Grid.Column="1" Name="FilePathTextBlock" Text="{converters:Localization StatusBarNoFile}" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="White" />
+        <TextBlock Grid.Column="2" Name="LineCountTextBlock" Text="{Binding StatusBarLinesText}" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="White" />
+      </Grid>
+    </Border>
+    
+    <!-- Main content area with split view -->
+    <Grid ColumnDefinitions="*, *">
+      <!-- Left side: Main log content -->
+      <DockPanel Grid.Column="0">
+        <Border DockPanel.Dock="Top" Background="#444444" Padding="5">
+          <TextBlock Text="{converters:Localization MainLogContent}" FontWeight="Bold" VerticalAlignment="Center" Foreground="White" />
+        </Border>
+        <Border Background="#1E1E1E" BorderBrush="#444444" BorderThickness="1">
+          <DockPanel>
+            <!-- Fixed Line Numbers Panel -->
+            <Border DockPanel.Dock="Left" 
+                    Width="{StaticResource LineNumberWidth}" 
+                    Background="#1E1E1E">
+              <ScrollViewer Name="LineNumbersScrollViewer"
+                            VerticalScrollBarVisibility="Hidden"
+                            HorizontalScrollBarVisibility="Disabled">
+                <ItemsRepeater Name="LineNumbersRepeater" ItemsSource="{Binding LogLines}">
+                  <ItemsRepeater.Layout>
+                    <StackLayout Orientation="Vertical" />
+                  </ItemsRepeater.Layout>
+                  <ItemsRepeater.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="{Binding LineNumber, StringFormat='{}{0:0000}'}" 
+                                 Foreground="#858585" 
+                                 FontFamily="{Binding FontFamily, FallbackValue=Consolas}" 
+                                 FontSize="{Binding FontSize, FallbackValue=12}"
+                                 LineHeight="{Binding LineHeight, FallbackValue=1.2}"
+                                 IsVisible="{Binding ShowLineNumbers, FallbackValue=True}" 
+                                 HorizontalAlignment="Right"
+                                 VerticalAlignment="Top"
+                                 Padding="0,5,5,5"
+                                 Margin="0,0,5,0" />
+                    </DataTemplate>
+                  </ItemsRepeater.ItemTemplate>
+                </ItemsRepeater>
+              </ScrollViewer>
+            </Border>
+            
+            <!-- Scrollable Content Panel -->
+            <Border Background="#1E1E1E">
+              <ScrollViewer Name="LogScrollViewer" 
+                            HorizontalScrollBarVisibility="Auto"
+                            VerticalScrollBarVisibility="Auto"
+                            ScrollChanged="OnContentScrollChanged">
+                <ItemsRepeater Name="LogLinesRepeater" ItemsSource="{Binding LogLines}">
+                  <ItemsRepeater.Layout>
+                    <StackLayout Orientation="Vertical" />
+                  </ItemsRepeater.Layout>
+                  <ItemsRepeater.ItemTemplate>
+                    <DataTemplate>
+                      <Border Padding="5" 
+                              Background="{Binding ColorMark, Converter={StaticResource ColorMarkConverter}, FallbackValue=#1E1E1E}"
+                              Name="LogLineBorder">
+                        <Border.ContextMenu>
+                          <ContextMenu>
+                            <MenuItem Header="{converters:Localization ContextCopyLine}" Command="{Binding CopyLineCommand, FallbackValue={x:Null}}" />
+                            <MenuItem Header="{converters:Localization ContextMark}" Name="MarkMenuItem">
+                              <MenuItem Header="_Red" Command="{Binding MarkLineColorCommand, FallbackValue={x:Null}}" CommandParameter="Red" />
+                              <MenuItem Header="_Orange" Command="{Binding MarkLineColorCommand, FallbackValue={x:Null}}" CommandParameter="Orange" />
+                              <MenuItem Header="_Yellow" Command="{Binding MarkLineColorCommand, FallbackValue={x:Null}}" CommandParameter="Yellow" />
+                              <MenuItem Header="_Green" Command="{Binding MarkLineColorCommand, FallbackValue={x:Null}}" CommandParameter="Green" />
+                              <MenuItem Header="_Cyan" Command="{Binding MarkLineColorCommand, FallbackValue={x:Null}}" CommandParameter="Cyan" />
+                              <MenuItem Header="_Blue" Command="{Binding MarkLineColorCommand, FallbackValue={x:Null}}" CommandParameter="Blue" />
+                              <MenuItem Header="_Purple" Command="{Binding MarkLineColorCommand, FallbackValue={x:Null}}" CommandParameter="Purple" />
+                              <MenuItem Header="_Gray" Command="{Binding MarkLineColorCommand, FallbackValue={x:Null}}" CommandParameter="Gray" />
+                              <MenuItem Header="_Magenta" Command="{Binding MarkLineColorCommand, FallbackValue={x:Null}}" CommandParameter="Magenta" />
+                            </MenuItem>
+                          </ContextMenu>
+                        </Border.ContextMenu>
+                        <TextBlock Text="{Binding Content}" 
+                                   FontFamily="{Binding FontFamily, FallbackValue=Consolas}" 
+                                   FontSize="{Binding FontSize, FallbackValue=12}"
+                                   LineHeight="{Binding LineHeight, FallbackValue=1.2}"
+                                   TextWrapping="{Binding ContentTextWrapping, FallbackValue=NoWrap}" 
+                                   Foreground="White" />
+                      </Border>
+                    </DataTemplate>
+                  </ItemsRepeater.ItemTemplate>
+                </ItemsRepeater>
+              </ScrollViewer>
+            </Border>
+          </DockPanel>
+        </Border>
+      </DockPanel>
+      
+      <!-- Right side: Search panel with dedicated results view -->
+      <Border Grid.Column="1" Background="#2D2D30" BorderBrush="#444444" BorderThickness="1">
+        <DockPanel>
+          <!-- Search controls at the top -->
+          <Border DockPanel.Dock="Top" Background="#444444" Padding="8">
+            <Grid RowDefinitions="Auto, Auto">
+              <!-- Search input and buttons -->
+              <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,5">
+                <TextBox Name="SearchTextBox" Text="{Binding SearchQuery}" Watermark="{converters:Localization SearchWatermark}" Width="250" Margin="0,0,10,0" Background="#3C3C3C" Foreground="White" BorderBrush="#555555" />
+                <Button Name="SearchButton" Content="{converters:Localization SearchButton}" Margin="0,0,5,0" 
+                        Command="{Binding SearchCommand}" Background="#337AB7" Foreground="White" />
+                <Button Name="ClearButton" Content="{converters:Localization ClearButton}" 
+                        Command="{Binding ClearResultsCommand}" Background="#d9534f" Foreground="White" />
+              </StackPanel>
+
+              <!-- Search options -->
+              <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,5,0,0">
+                <CheckBox Name="CaseSensitiveCheckBox" Content="{converters:Localization CaseSensitive}" 
+                          IsChecked="{Binding IsCaseSensitive}" Margin="0,0,10,0" Foreground="White" />
+                <CheckBox Name="UseRegexCheckBox" Content="{converters:Localization UseRegex}" 
+                          IsChecked="{Binding UseRegex}" Foreground="White" />
+              </StackPanel>
+            </Grid>
+          </Border>
+          
+          <!-- Search results header -->
+          <Border DockPanel.Dock="Top" Background="#444444" Padding="5">
+            <TextBlock Name="SearchResultsCount" 
+                       Text="{Binding SearchResults.Count, StringFormat='Search Results: {0}'}" 
+                       FontWeight="Bold" VerticalAlignment="Center" Foreground="White" />
+          </Border>
+          
+          <!-- Search results list -->
+          <DockPanel Name="SearchResultsPanel">
+            <!-- Fixed Line Numbers Panel -->
+            <Border DockPanel.Dock="Left" 
+                    Width="{StaticResource LineNumberWidth}" 
+                    Background="#1E1E1E">
+              <ScrollViewer Name="SearchLineNumbersScrollViewer"
+                            VerticalScrollBarVisibility="Hidden"
+                            HorizontalScrollBarVisibility="Disabled">
+                <ItemsRepeater Name="SearchLineNumbersRepeater" ItemsSource="{Binding SearchResults}">
+                  <ItemsRepeater.Layout>
+                    <StackLayout Orientation="Vertical" />
+                  </ItemsRepeater.Layout>
+                  <ItemsRepeater.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="{Binding LineNumber, StringFormat='{}{0:0000}'}" 
+                                 Foreground="#858585" 
+                                 FontFamily="{Binding FontFamily, FallbackValue=Consolas}" 
+                                 FontSize="{Binding FontSize, FallbackValue=12}"
+                                 LineHeight="{Binding LineHeight, FallbackValue=1.2}"
+                                 IsVisible="{Binding ShowLineNumbers, FallbackValue=True}" 
+                                 HorizontalAlignment="Right"
+                                 VerticalAlignment="Top"
+                                 Padding="0,5,5,5"
+                                 Margin="0,0,5,0" />
+                    </DataTemplate>
+                  </ItemsRepeater.ItemTemplate>
+                </ItemsRepeater>
+              </ScrollViewer>
+            </Border>
+            
+            <!-- Scrollable Content Panel -->
+            <Border Background="#1E1E1E">
+              <ScrollViewer Name="ResultsScrollViewer"
+                            VerticalScrollBarVisibility="Auto"
+                            HorizontalScrollBarVisibility="Auto"
+                            ScrollChanged="OnSearchContentScrollChanged">
+                <ItemsRepeater Name="ResultsRepeater" ItemsSource="{Binding SearchResults}">
+                  <ItemsRepeater.Layout>
+                    <StackLayout Orientation="Vertical" />
+                  </ItemsRepeater.Layout>
+                  <ItemsRepeater.ItemTemplate>
+                    <DataTemplate>
+                      <Border Padding="5" 
+                              Background="{Binding ColorMark, Converter={StaticResource ColorMarkConverter}, FallbackValue=#1E1E1E}"
+                              Name="ResultItem"
+                              Tag="{Binding LineNumber}"
+                              DoubleTapped="ResultItem_DoubleTapped"
+                              Cursor="Hand">
+                        <Border.ContextMenu>
+                          <ContextMenu>
+                            <MenuItem Header="{converters:Localization ContextCopyLine}" Command="{Binding CopyLineCommand, FallbackValue={x:Null}}" />
+                            <MenuItem Header="{converters:Localization ContextMark}" Name="MarkMenuItem">
+                              <MenuItem Header="_Red" Command="{Binding MarkLineColorCommand, FallbackValue={x:Null}}" CommandParameter="Red" />
+                              <MenuItem Header="_Orange" Command="{Binding MarkLineColorCommand, FallbackValue={x:Null}}" CommandParameter="Orange" />
+                              <MenuItem Header="_Yellow" Command="{Binding MarkLineColorCommand, FallbackValue={x:Null}}" CommandParameter="Yellow" />
+                              <MenuItem Header="_Green" Command="{Binding MarkLineColorCommand, FallbackValue={x:Null}}" CommandParameter="Green" />
+                              <MenuItem Header="_Cyan" Command="{Binding MarkLineColorCommand, FallbackValue={x:Null}}" CommandParameter="Cyan" />
+                              <MenuItem Header="_Blue" Command="{Binding MarkLineColorCommand, FallbackValue={x:Null}}" CommandParameter="Blue" />
+                              <MenuItem Header="_Purple" Command="{Binding MarkLineColorCommand, FallbackValue={x:Null}}" CommandParameter="Purple" />
+                              <MenuItem Header="_Gray" Command="{Binding MarkLineColorCommand, FallbackValue={x:Null}}" CommandParameter="Gray" />
+                              <MenuItem Header="_Magenta" Command="{Binding MarkLineColorCommand, FallbackValue={x:Null}}" CommandParameter="Magenta" />
+                            </MenuItem>
+                          </ContextMenu>
+                        </Border.ContextMenu>
+                        <TextBlock Text="{Binding Content}" 
+                                   FontFamily="{Binding FontFamily, FallbackValue=Consolas}" 
+                                   FontSize="{Binding FontSize, FallbackValue=12}"
+                                   LineHeight="{Binding LineHeight, FallbackValue=1.2}"
+                                   TextWrapping="{Binding ContentTextWrapping, FallbackValue=NoWrap}" 
+                                   Foreground="White" />
+                      </Border>
+                    </DataTemplate>
+                  </ItemsRepeater.ItemTemplate>
+                </ItemsRepeater>
+              </ScrollViewer>
+            </Border>
+          </DockPanel>
+        </DockPanel>
+      </Border>
+    </Grid>
+  </DockPanel>
+
+</Window>

@@ -1,0 +1,110 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net9.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+        <AvaloniaUseCompiledBindings>true</AvaloniaUseCompiledBindings>
+        <RootNamespace>top.z7workbench.loggi</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <AvaloniaResource Include="Assets\**" />
+        <AvaloniaResource Include="Resources\**" />
+    </ItemGroup>
+
+    <!-- Exclude TestResources.cs and ResourceTest.cs as they have Main methods that conflict with Program.cs -->
+    <ItemGroup>
+        <Compile Remove="TestResources.cs" />
+        <Compile Remove="ResourceTest.cs" />
+    </ItemGroup>
+
+    <!-- Enable strongly-typed resource generation -->
+    <ItemGroup>
+        <EmbeddedResource Update="Resources\Strings.resx">
+            <Generator>PublicResXFileCodeGenerator</Generator>
+            <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+        </EmbeddedResource>
+    </ItemGroup>
+
+    <!-- Include icon files for different platforms -->
+    <ItemGroup>
+        <None Remove="Assets\icon.svg" />
+        <AvaloniaResource Include="Assets\icon.svg" />
+    </ItemGroup>
+
+    <!-- Define application icon for different platforms (only if files exist) -->
+    <PropertyGroup Condition="Exists('Assets\icon.ico')">
+        <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
+    </PropertyGroup>
+    <PropertyGroup Condition="Exists('Assets\icon.icns')">
+        <ApplicationIcon>Assets\icon.icns</ApplicationIcon>
+    </PropertyGroup>
+
+    <!-- macOS application icon -->
+    <ItemGroup Condition="'$(RuntimeIdentifier)' == 'osx-x64' OR '$(RuntimeIdentifier)' == 'osx-arm64'">
+        <Content Include="Assets\icon.icns" Condition="Exists('Assets\icon.icns')">
+            <Link>Loggi.icns</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+
+    <!-- Windows application icon -->
+    <ItemGroup Condition="'$(RuntimeIdentifier)' == 'win-x64' OR '$(RuntimeIdentifier)' == 'win-x86' OR '$(RuntimeIdentifier)' == 'win-arm64'">
+        <Content Include="Assets\icon.ico" Condition="Exists('Assets\icon.ico')">
+            <Link>Loggi.ico</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+    
+    <!-- Generate icons for different platforms during build -->
+    <Target Name="GenerateIcons" BeforeTargets="Build" Condition="!Exists('Assets\icon.ico') OR !Exists('Assets\icon.icns')">
+        <Exec Command="bash -c &quot;cd '$(ProjectDir)../..' &amp;&amp; scripts/generate-icons.sh&quot;" 
+              Condition="'$(OS)' == 'Unix' OR '$(OS)' == 'OSX'" 
+              ContinueOnError="true" />
+        <Exec Command="bash -c &quot;cd '$(ProjectDir)../..' &amp;&amp; scripts/generate-icons.sh&quot;" 
+              Condition="'$(OS)' == 'Unix'" 
+              ContinueOnError="true" />
+    </Target>
+
+    <ItemGroup>
+        <PackageReference Include="Avalonia" Version="11.0.0" />
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.0.0" />
+        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.0.0" />
+        <PackageReference Include="Avalonia.ReactiveUI" Version="11.0.0" />
+        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.0" />
+        <PackageReference Include="Avalonia.Controls.ItemsRepeater" Version="11.0.0" />
+        <PackageReference Include="Avalonia.Diagnostics" Version="11.0.0" />
+        <PackageReference Include="Avalonia.Desktop" Version="11.0.0" />
+    </ItemGroup>
+
+    <!-- Package for strongly-typed resource generation -->
+    <ItemGroup>
+        <PackageReference Include="System.Resources.Extensions" Version="8.0.0" />
+    </ItemGroup>
+
+    <!-- Build Rust library and copy to output directory -->
+    <Target Name="BuildRust" BeforeTargets="Build">
+        <!-- Determine OS and build accordingly -->
+        <Exec Command="cd ..\rust &amp;&amp; cargo build --release" Condition="'$(OS)' == 'Windows_NT'" />
+        <Exec Command="bash -c &quot;cd ../rust &amp;&amp; cargo build --release&quot;" Condition="'$(OS)' != 'Windows_NT'" />
+        <!-- Copy the appropriate native library based on the OS -->
+        <ItemGroup>
+            <Content Include="..\rust\target\release\loggi_core.dll">
+                <Link>loggi_core.dll</Link>
+                <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+                <Visible>false</Visible>
+            </Content>
+            <Content Include="..\rust\target\release\libloggi_core.so">
+                <Link>libloggi_core.so</Link>
+                <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+                <Visible>false</Visible>
+            </Content>
+            <Content Include="..\rust\target\release\libloggi_core.dylib">
+                <Link>libloggi_core.dylib</Link>
+                <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+                <Visible>false</Visible>
+            </Content>
+        </ItemGroup>
+    </Target>
+</Project>

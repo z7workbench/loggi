@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded" minOccurs="0">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="optional" msdata:Ordinal="1" />
+              <xsd:attribute name="type" use="optional" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" use="optional" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AppName" xml:space="preserve">
+    <value>loggi - High Performance Log Viewer</value>
+  </data>
+  <data name="MenuFile" xml:space="preserve">
+    <value>_File</value>
+  </data>
+  <data name="MenuOpen" xml:space="preserve">
+    <value>_Open</value>
+  </data>
+  <data name="MenuSettings" xml:space="preserve">
+    <value>_Settings</value>
+  </data>
+  <data name="MenuExit" xml:space="preserve">
+    <value>E_xit</value>
+  </data>
+  <data name="MenuView" xml:space="preserve">
+    <value>_View</value>
+  </data>
+  <data name="MenuRefresh" xml:space="preserve">
+    <value>_Refresh</value>
+  </data>
+  <data name="MenuHelp" xml:space="preserve">
+    <value>_Help</value>
+  </data>
+  <data name="MenuAbout" xml:space="preserve">
+    <value>_About</value>
+  </data>
+  <data name="MenuClose" xml:space="preserve">
+    <value>_Close</value>
+  </data>
+  <data name="StatusBarReady" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="StatusBarNoFile" xml:space="preserve">
+    <value>No file loaded</value>
+  </data>
+  <data name="StatusBarLines" xml:space="preserve">
+    <value>Lines: {0}</value>
+  </data>
+  <data name="MainLogContent" xml:space="preserve">
+    <value>Main Log File Content</value>
+  </data>
+  <data name="SearchWatermark" xml:space="preserve">
+    <value>Enter search keywords...</value>
+  </data>
+  <data name="SearchButton" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="ClearButton" xml:space="preserve">
+    <value>Clear Results</value>
+  </data>
+  <data name="CaseSensitive" xml:space="preserve">
+    <value>Case Sensitive</value>
+  </data>
+  <data name="UseRegex" xml:space="preserve">
+    <value>Use Regular Expression</value>
+  </data>
+  <data name="SearchResults" xml:space="preserve">
+    <value>Search Results: {0}</value>
+  </data>
+  <data name="SettingsTitle" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="SettingsDisplay" xml:space="preserve">
+    <value>Display</value>
+  </data>
+  <data name="SettingsFontSettings" xml:space="preserve">
+    <value>Font Settings</value>
+  </data>
+  <data name="SettingsViewOptions" xml:space="preserve">
+    <value>View Options</value>
+  </data>
+  <data name="SettingsFontSize" xml:space="preserve">
+    <value>Font Size:</value>
+  </data>
+  <data name="SettingsFontFamily" xml:space="preserve">
+    <value>Font Family:</value>
+  </data>
+  <data name="SettingsLineHeight" xml:space="preserve">
+    <value>Line Height:</value>
+  </data>
+  <data name="SettingsViewOptionsTitle" xml:space="preserve">
+    <value>View Options</value>
+  </data>
+  <data name="SettingsShowLineNumbers" xml:space="preserve">
+    <value>Show Line Numbers</value>
+  </data>
+  <data name="SettingsWordWrap" xml:space="preserve">
+    <value>Word Wrap</value>
+  </data>
+  <data name="SettingsOK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="SettingsCancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="LanguageLabel" xml:space="preserve">
+    <value>Language:</value>
+  </data>
+  <data name="LanguageEnglish" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="LanguageChinese" xml:space="preserve">
+    <value>简体中文</value>
+  </data>
+  <data name="ContextMark" xml:space="preserve">
+    <value>Mark</value>
+  </data>
+  <data name="ContextCopyLine" xml:space="preserve">
+    <value>Copy Line</value>
+  </data>
+  <data name="FileDialogTitle" xml:space="preserve">
+    <value>Open Log File</value>
+  </data>
+  <data name="LogFilesFilter" xml:space="preserve">
+    <value>Log Files</value>
+  </data>
+  <data name="AllFilesFilter" xml:space="preserve">
+    <value>All Files</value>
+  </data>
+</root>
