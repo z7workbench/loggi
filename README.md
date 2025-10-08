@@ -3,6 +3,7 @@
 [![.NET](https://img.shields.io/badge/.NET-9.0-blue.svg)](https://dotnet.microsoft.com/)
 [![Rust](https://img.shields.io/badge/Rust-1.70+-orange.svg)](https://www.rust-lang.org/)
 [![Avalonia](https://img.shields.io/badge/Avalonia-11.0+-5596C8?logo=avalonia)](https://avaloniaui.net/)
+[![Powered by Qwen-Code](https://img.shields.io/badge/Powered%20by-Qwen--Code-8A2BE2?logo=github&logoColor=white)](https://github.com/QwenLM/Qwen-Code)
 
 loggi is a cross-platform, high-performance log file viewer built with a Rust core and Avalonia UI. It efficiently handles large log files using memory mapping technology and provides fast search capabilities.
 
