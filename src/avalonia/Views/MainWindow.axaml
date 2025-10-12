@@ -13,6 +13,7 @@
     <converters:LineNumberWithBracketsConverter x:Key="LineNumberWithBracketsConverter"/>
     <converters:HighlightConverter x:Key="HighlightConverter"/>
     <converters:ColorMarkConverter x:Key="ColorMarkConverter"/>
+    <converters:LineHeightToPaddingConverter x:Key="LineHeightToPaddingConverter"/>
   </Window.Resources>
   <DockPanel>
     <!-- Menu Bar -->
@@ -65,11 +66,10 @@
                                  Foreground="#858585" 
                                  FontFamily="{Binding FontFamily, FallbackValue=Consolas}" 
                                  FontSize="{Binding FontSize, FallbackValue=12}"
-                                 LineHeight="{Binding LineHeight, FallbackValue=1.2}"
                                  IsVisible="{Binding ShowLineNumbers, FallbackValue=True}" 
                                  HorizontalAlignment="Right"
                                  VerticalAlignment="Top"
-                                 Padding="0,5,5,5"
+                                 Padding="{Binding LineHeight, Converter={StaticResource LineHeightToPaddingConverter}, FallbackValue='5,5,5,5'}"
                                  Margin="0,0,5,0" />
                     </DataTemplate>
                   </ItemsRepeater.ItemTemplate>
@@ -89,9 +89,9 @@
                   </ItemsRepeater.Layout>
                   <ItemsRepeater.ItemTemplate>
                     <DataTemplate>
-                      <Border Padding="5" 
-                              Background="{Binding ColorMark, Converter={StaticResource ColorMarkConverter}, FallbackValue=#1E1E1E}"
-                              Name="LogLineBorder">
+                      <Border Background="{Binding ColorMark, Converter={StaticResource ColorMarkConverter}, FallbackValue=#1E1E1E}"
+                              Name="LogLineBorder"
+                              Padding="{Binding LineHeight, Converter={StaticResource LineHeightToPaddingConverter}, FallbackValue='5,5,5,5'}">
                         <Border.ContextMenu>
                           <ContextMenu>
                             <MenuItem Header="{converters:Localization ContextCopyLine}" Command="{Binding CopyLineCommand, FallbackValue={x:Null}}" />
@@ -111,7 +111,6 @@
                         <TextBlock Text="{Binding Content}" 
                                    FontFamily="{Binding FontFamily, FallbackValue=Consolas}" 
                                    FontSize="{Binding FontSize, FallbackValue=12}"
-                                   LineHeight="{Binding LineHeight, FallbackValue=1.2}"
                                    TextWrapping="{Binding ContentTextWrapping, FallbackValue=NoWrap}" 
                                    Foreground="White" />
                       </Border>
@@ -175,11 +174,10 @@
                                  Foreground="#858585" 
                                  FontFamily="{Binding FontFamily, FallbackValue=Consolas}" 
                                  FontSize="{Binding FontSize, FallbackValue=12}"
-                                 LineHeight="{Binding LineHeight, FallbackValue=1.2}"
                                  IsVisible="{Binding ShowLineNumbers, FallbackValue=True}" 
                                  HorizontalAlignment="Right"
                                  VerticalAlignment="Top"
-                                 Padding="0,5,5,5"
+                                 Padding="{Binding LineHeight, Converter={StaticResource LineHeightToPaddingConverter}, FallbackValue='5,5,5,5'}"
                                  Margin="0,0,5,0" />
                     </DataTemplate>
                   </ItemsRepeater.ItemTemplate>
@@ -199,9 +197,9 @@
                   </ItemsRepeater.Layout>
                   <ItemsRepeater.ItemTemplate>
                     <DataTemplate>
-                      <Border Padding="5" 
-                              Background="{Binding ColorMark, Converter={StaticResource ColorMarkConverter}, FallbackValue=#1E1E1E}"
+                      <Border Background="{Binding ColorMark, Converter={StaticResource ColorMarkConverter}, FallbackValue=#1E1E1E}"
                               Name="ResultItem"
+                              Padding="{Binding LineHeight, Converter={StaticResource LineHeightToPaddingConverter}, FallbackValue='5,5,5,5'}"
                               Tag="{Binding LineNumber}"
                               DoubleTapped="ResultItem_DoubleTapped"
                               Cursor="Hand">
@@ -224,7 +222,6 @@
                         <TextBlock Text="{Binding Content}" 
                                    FontFamily="{Binding FontFamily, FallbackValue=Consolas}" 
                                    FontSize="{Binding FontSize, FallbackValue=12}"
-                                   LineHeight="{Binding LineHeight, FallbackValue=1.2}"
                                    TextWrapping="{Binding ContentTextWrapping, FallbackValue=NoWrap}" 
                                    Foreground="White" />
                       </Border>
