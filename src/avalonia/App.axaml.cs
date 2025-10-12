@@ -24,6 +24,9 @@ namespace top.z7workbench.loggi
         {
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
+                // Initialize the theme service
+                ThemeService.Instance.Initialize();
+                
                 var mainWindowViewModel = new ViewModels.MainWindowViewModel();
                 desktop.MainWindow = new Views.MainWindow
                 {

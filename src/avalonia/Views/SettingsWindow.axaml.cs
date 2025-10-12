@@ -23,8 +23,7 @@ namespace top.z7workbench.loggi.Views
 #if DEBUG
             this.AttachDevTools();
 #endif
-            this.FindControl<Button>("SaveButton").Click += SaveButton_Click;
-            this.FindControl<Button>("CancelButton").Click += CancelButton_Click;
+            // Remove the SaveButton and CancelButton event handlers since we removed those buttons
             
             // Set initial selected button (the first one)
             _selectedCategoryButton = this.FindControl<Button>("FontSettingsButton");
@@ -49,32 +48,6 @@ namespace top.z7workbench.loggi.Views
         private void InitializeComponent()
         {
             AvaloniaXamlLoader.Load(this);
-        }
-        
-        /// <summary>
-        /// Handles the click event on the Save button, closing the settings window.
-        /// </summary>
-        /// <param name="sender">The Save button that was clicked</param>
-        /// <param name="e">Routed event arguments</param>
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
-        {
-            // If we have access to the main window view model, update the language
-            if (_mainWindowViewModel != null && this.DataContext is SettingsWindowViewModel settingsViewModel)
-            {
-                _mainWindowViewModel.UpdateLanguage(settingsViewModel.SelectedLanguage);
-            }
-            
-            this.Close();
-        }
-        
-        /// <summary>
-        /// Handles the click event on the Cancel button, closing the settings window.
-        /// </summary>
-        /// <param name="sender">The Cancel button that was clicked</param>
-        /// <param name="e">Routed event arguments</param>
-        private void CancelButton_Click(object sender, RoutedEventArgs e)
-        {
-            this.Close();
         }
         
         /// <summary>

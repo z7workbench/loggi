@@ -8,6 +8,7 @@ using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using System;
+using top.z7workbench.loggi.Services;
 
 namespace top.z7workbench.loggi.Views
 {
@@ -98,6 +99,12 @@ namespace top.z7workbench.loggi.Views
             if (settingsMenuItem != null)
             {
                 settingsMenuItem.Click += SettingsMenuItem_Click;
+            }
+            
+            var toggleThemeMenuItem = this.FindControl<MenuItem>("ToggleThemeMenuItem");
+            if (toggleThemeMenuItem != null)
+            {
+                toggleThemeMenuItem.Click += ToggleThemeMenuItem_Click;
             }
             
             // Connect context menu items
@@ -394,6 +401,16 @@ namespace top.z7workbench.loggi.Views
             {
                 vm.SettingsCommand.Execute(null);
             }
+        }
+        
+        /// <summary>
+        /// Handles the click event on the Toggle Theme menu item, toggling between light and dark themes.
+        /// </summary>
+        /// <param name="sender">The menu item that was clicked</param>
+        /// <param name="e">Routed event arguments</param>
+        private void ToggleThemeMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            Services.ThemeService.Instance.ToggleTheme();
         }
         
         /// <summary>

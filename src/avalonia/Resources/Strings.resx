@@ -172,10 +172,13 @@
   <data name="FileDialogTitle" xml:space="preserve">
     <value>Open Log File</value>
   </data>
-  <data name="LogFilesFilter" xml:space="preserve">
-    <value>Log Files</value>
+  <data name="SettingsThemeTitle" xml:space="preserve">
+    <value>Theme</value>
   </data>
-  <data name="AllFilesFilter" xml:space="preserve">
-    <value>All Files</value>
+  <data name="SettingsThemeLabel" xml:space="preserve">
+    <value>Theme:</value>
+  </data>
+  <data name="MenuToggleTheme" xml:space="preserve">
+    <value>Toggle Theme</value>
   </data>
 </root>

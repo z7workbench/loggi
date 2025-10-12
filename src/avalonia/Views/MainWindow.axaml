@@ -25,6 +25,7 @@
       </MenuItem>
       <MenuItem Header="{converters:Localization MenuView}">
         <MenuItem Name="RefreshMenuItem" Header="{converters:Localization MenuRefresh}" InputGesture="F5" />
+        <MenuItem Name="ToggleThemeMenuItem" Header="{converters:Localization MenuToggleTheme}" InputGesture="Ctrl+T" />
       </MenuItem>
       <MenuItem Header="{converters:Localization MenuHelp}">
         <MenuItem Name="AboutMenuItem" Header="{converters:Localization MenuAbout}" />
@@ -32,11 +33,11 @@
     </Menu>
     
     <!-- Status Bar -->
-    <Border DockPanel.Dock="Bottom" Background="#2D2D30" Padding="5">
+    <Border DockPanel.Dock="Bottom" Background="{DynamicResource StatusBarBackground}" Padding="5">
       <Grid ColumnDefinitions="100, *, 150">
-        <TextBlock Grid.Column="0" Name="StatusTextBlock" Text="{converters:Localization StatusBarReady}" VerticalAlignment="Center" Foreground="White" />
-        <TextBlock Grid.Column="1" Name="FilePathTextBlock" Text="{converters:Localization StatusBarNoFile}" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="White" />
-        <TextBlock Grid.Column="2" Name="LineCountTextBlock" Text="{Binding StatusBarLinesText}" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="White" />
+        <TextBlock Grid.Column="0" Name="StatusTextBlock" Text="{converters:Localization StatusBarReady}" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}" />
+        <TextBlock Grid.Column="1" Name="FilePathTextBlock" Text="{converters:Localization StatusBarNoFile}" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="{DynamicResource TextBrush}" />
+        <TextBlock Grid.Column="2" Name="LineCountTextBlock" Text="{Binding StatusBarLinesText}" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="{DynamicResource TextBrush}" />
       </Grid>
     </Border>
     
@@ -44,15 +45,15 @@
     <Grid ColumnDefinitions="*, *">
       <!-- Left side: Main log content -->
       <DockPanel Grid.Column="0">
-        <Border DockPanel.Dock="Top" Background="#444444" Padding="5">
-          <TextBlock Text="{converters:Localization MainLogContent}" FontWeight="Bold" VerticalAlignment="Center" Foreground="White" />
+        <Border DockPanel.Dock="Top" Background="{DynamicResource SectionHeaderBackground}" Padding="5">
+          <TextBlock Text="{converters:Localization MainLogContent}" FontWeight="Bold" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}" />
         </Border>
-        <Border Background="#1E1E1E" BorderBrush="#444444" BorderThickness="1">
+        <Border Background="{DynamicResource MainContentBackground}" BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="1">
           <DockPanel>
             <!-- Fixed Line Numbers Panel -->
             <Border DockPanel.Dock="Left" 
                     Width="{StaticResource LineNumberWidth}" 
-                    Background="#1E1E1E">
+                    Background="{DynamicResource MainContentBackground}">
               <ScrollViewer Name="LineNumbersScrollViewer"
                             VerticalScrollBarVisibility="Hidden"
                             HorizontalScrollBarVisibility="Disabled">
@@ -63,7 +64,7 @@
                   <ItemsRepeater.ItemTemplate>
                     <DataTemplate>
                       <TextBlock Text="{Binding LineNumber, StringFormat='{}{0:0000}'}" 
-                                 Foreground="#858585" 
+                                 Foreground="{DynamicResource LineNumberForeground}" 
                                  FontFamily="{Binding FontFamily, FallbackValue=Consolas}" 
                                  FontSize="{Binding FontSize, FallbackValue=12}"
                                  IsVisible="{Binding ShowLineNumbers, FallbackValue=True}" 
@@ -78,7 +79,7 @@
             </Border>
             
             <!-- Scrollable Content Panel -->
-            <Border Background="#1E1E1E">
+            <Border Background="{DynamicResource MainContentBackground}">
               <ScrollViewer Name="LogScrollViewer" 
                             HorizontalScrollBarVisibility="Auto"
                             VerticalScrollBarVisibility="Auto"
@@ -89,7 +90,7 @@
                   </ItemsRepeater.Layout>
                   <ItemsRepeater.ItemTemplate>
                     <DataTemplate>
-                      <Border Background="{Binding ColorMark, Converter={StaticResource ColorMarkConverter}, FallbackValue=#1E1E1E}"
+                      <Border Background="{Binding ColorMark, Converter={StaticResource ColorMarkConverter}, FallbackValue={DynamicResource MainContentBackground}}"
                               Name="LogLineBorder"
                               Padding="{Binding LineHeight, Converter={StaticResource LineHeightToPaddingConverter}, FallbackValue='5,5,5,5'}">
                         <Border.ContextMenu>
@@ -112,7 +113,7 @@
                                    FontFamily="{Binding FontFamily, FallbackValue=Consolas}" 
                                    FontSize="{Binding FontSize, FallbackValue=12}"
                                    TextWrapping="{Binding ContentTextWrapping, FallbackValue=NoWrap}" 
-                                   Foreground="White" />
+                                   Foreground="{DynamicResource TextBrush}" />
                       </Border>
                     </DataTemplate>
                   </ItemsRepeater.ItemTemplate>
@@ -124,35 +125,35 @@
       </DockPanel>
       
       <!-- Right side: Search panel with dedicated results view -->
-      <Border Grid.Column="1" Background="#2D2D30" BorderBrush="#444444" BorderThickness="1">
+      <Border Grid.Column="1" Background="{DynamicResource MainBackgroundBrush}" BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="1">
         <DockPanel>
           <!-- Search controls at the top -->
-          <Border DockPanel.Dock="Top" Background="#444444" Padding="8">
+          <Border DockPanel.Dock="Top" Background="{DynamicResource SectionHeaderBackground}" Padding="8">
             <Grid RowDefinitions="Auto, Auto">
               <!-- Search input and buttons -->
               <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,5">
-                <TextBox Name="SearchTextBox" Text="{Binding SearchQuery}" Watermark="{converters:Localization SearchWatermark}" Width="250" Margin="0,0,10,0" Background="#3C3C3C" Foreground="White" BorderBrush="#555555" />
+                <TextBox Name="SearchTextBox" Text="{Binding SearchQuery}" Watermark="{converters:Localization SearchWatermark}" Width="250" Margin="0,0,10,0" Background="{DynamicResource SearchBoxBackground}" Foreground="{DynamicResource SearchBoxForeground}" BorderBrush="{DynamicResource SearchBoxBorder}" />
                 <Button Name="SearchButton" Content="{converters:Localization SearchButton}" Margin="0,0,5,0" 
-                        Command="{Binding SearchCommand}" Background="#337AB7" Foreground="White" />
+                        Command="{Binding SearchCommand}" Background="{DynamicResource SearchButtonBackground}" Foreground="{DynamicResource SearchButtonForeground}" />
                 <Button Name="ClearButton" Content="{converters:Localization ClearButton}" 
-                        Command="{Binding ClearResultsCommand}" Background="#d9534f" Foreground="White" />
+                        Command="{Binding ClearResultsCommand}" Background="{DynamicResource ClearButtonBackground}" Foreground="{DynamicResource ClearButtonForeground}" />
               </StackPanel>
 
               <!-- Search options -->
               <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,5,0,0">
                 <CheckBox Name="CaseSensitiveCheckBox" Content="{converters:Localization CaseSensitive}" 
-                          IsChecked="{Binding IsCaseSensitive}" Margin="0,0,10,0" Foreground="White" />
+                          IsChecked="{Binding IsCaseSensitive}" Margin="0,0,10,0" Foreground="{DynamicResource TextBrush}" />
                 <CheckBox Name="UseRegexCheckBox" Content="{converters:Localization UseRegex}" 
-                          IsChecked="{Binding UseRegex}" Foreground="White" />
+                          IsChecked="{Binding UseRegex}" Foreground="{DynamicResource TextBrush}" />
               </StackPanel>
             </Grid>
           </Border>
           
           <!-- Search results header -->
-          <Border DockPanel.Dock="Top" Background="#444444" Padding="5">
+          <Border DockPanel.Dock="Top" Background="{DynamicResource SectionHeaderBackground}" Padding="5">
             <TextBlock Name="SearchResultsCount" 
                        Text="{Binding SearchResults.Count, StringFormat='Search Results: {0}'}" 
-                       FontWeight="Bold" VerticalAlignment="Center" Foreground="White" />
+                       FontWeight="Bold" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}" />
           </Border>
           
           <!-- Search results list -->
@@ -160,7 +161,7 @@
             <!-- Fixed Line Numbers Panel -->
             <Border DockPanel.Dock="Left" 
                     Width="{StaticResource LineNumberWidth}" 
-                    Background="#1E1E1E">
+                    Background="{DynamicResource MainContentBackground}">
               <ScrollViewer Name="SearchLineNumbersScrollViewer"
                             VerticalScrollBarVisibility="Hidden"
                             HorizontalScrollBarVisibility="Disabled">
@@ -171,7 +172,7 @@
                   <ItemsRepeater.ItemTemplate>
                     <DataTemplate>
                       <TextBlock Text="{Binding LineNumber, StringFormat='{}{0:0000}'}" 
-                                 Foreground="#858585" 
+                                 Foreground="{DynamicResource LineNumberForeground}" 
                                  FontFamily="{Binding FontFamily, FallbackValue=Consolas}" 
                                  FontSize="{Binding FontSize, FallbackValue=12}"
                                  IsVisible="{Binding ShowLineNumbers, FallbackValue=True}" 
@@ -186,7 +187,7 @@
             </Border>
             
             <!-- Scrollable Content Panel -->
-            <Border Background="#1E1E1E">
+            <Border Background="{DynamicResource MainContentBackground}">
               <ScrollViewer Name="ResultsScrollViewer"
                             VerticalScrollBarVisibility="Auto"
                             HorizontalScrollBarVisibility="Auto"
@@ -197,7 +198,7 @@
                   </ItemsRepeater.Layout>
                   <ItemsRepeater.ItemTemplate>
                     <DataTemplate>
-                      <Border Background="{Binding ColorMark, Converter={StaticResource ColorMarkConverter}, FallbackValue=#1E1E1E}"
+                      <Border Background="{Binding ColorMark, Converter={StaticResource ColorMarkConverter}, FallbackValue={DynamicResource MainContentBackground}}"
                               Name="ResultItem"
                               Padding="{Binding LineHeight, Converter={StaticResource LineHeightToPaddingConverter}, FallbackValue='5,5,5,5'}"
                               Tag="{Binding LineNumber}"
@@ -223,7 +224,7 @@
                                    FontFamily="{Binding FontFamily, FallbackValue=Consolas}" 
                                    FontSize="{Binding FontSize, FallbackValue=12}"
                                    TextWrapping="{Binding ContentTextWrapping, FallbackValue=NoWrap}" 
-                                   Foreground="White" />
+                                   Foreground="{DynamicResource TextBrush}" />
                       </Border>
                     </DataTemplate>
                   </ItemsRepeater.ItemTemplate>

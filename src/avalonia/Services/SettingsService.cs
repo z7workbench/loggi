@@ -159,5 +159,6 @@ namespace top.z7workbench.loggi.Services
         public string LastOpenedFile { get; set; } = string.Empty;
         public double LineHeight { get; set; } = 1.2; // Default line height multiplier
         public string Language { get; set; } = "en-US"; // Default language
+        public string Theme { get; set; } = "ZeroGo's Dark"; // Default theme
     }
 }

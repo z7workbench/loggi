@@ -1,0 +1,53 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- ZeroGo's Light Theme -->
+  <!-- Primary Color: #8686ff -->
+  <!-- Secondary Color: #ecb111 -->
+  <!-- Main Background: #FFFFFF -->
+  <!-- Text Color: #000000 -->
+  <!-- Non-primary Background: #EDEDED -->
+  <!-- Separator Color: #AEAEAE -->
+
+  <!-- General Colors -->
+  <Color x:Key="PrimaryColor">#8686ff</Color>
+  <Color x:Key="SecondaryColor">#ecb111</Color>
+  <Color x:Key="MainBackground">#FFFFFF</Color>
+  <Color x:Key="TextColor">#000000</Color>
+  <Color x:Key="NonPrimaryBackground">#EDEDED</Color>
+  <Color x:Key="SeparatorColor">#AEAEAE</Color>
+
+  <!-- Brush Resources -->
+  <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}" />
+  <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource SecondaryColor}" />
+  <SolidColorBrush x:Key="MainBackgroundBrush" Color="{StaticResource MainBackground}" />
+  <SolidColorBrush x:Key="TextBrush" Color="{StaticResource TextColor}" />
+  <SolidColorBrush x:Key="NonPrimaryBackgroundBrush" Color="{StaticResource NonPrimaryBackground}" />
+  <SolidColorBrush x:Key="SeparatorBrush" Color="{StaticResource SeparatorColor}" />
+
+  <!-- UI Specific Colors -->
+  <SolidColorBrush x:Key="StatusBarBackground" Color="#8686ff" />
+  <SolidColorBrush x:Key="SectionHeaderBackground" Color="#EDEDED" />
+  <SolidColorBrush x:Key="MainContentBackground" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="LineNumberForeground" Color="#AEAEAE" />
+  <SolidColorBrush x:Key="SearchBoxBackground" Color="#EDEDED" />
+  <SolidColorBrush x:Key="SearchBoxForeground" Color="#000000" />
+  <SolidColorBrush x:Key="SearchBoxBorder" Color="#8686ff" />
+  <SolidColorBrush x:Key="SearchButtonBackground" Color="#8686ff" />
+  <SolidColorBrush x:Key="SearchButtonForeground" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="ClearButtonBackground" Color="#ecb111" />
+  <SolidColorBrush x:Key="ClearButtonForeground" Color="#FFFFFF" />
+
+  <!-- Settings Window Colors -->
+  <SolidColorBrush x:Key="NavigationSidebarBackground" Color="#EDEDED" />
+  <SolidColorBrush x:Key="NavigationSidebarBorder" Color="#8686ff" />
+  <SolidColorBrush x:Key="NavigationButtonForeground" Color="#000000" />
+  <SolidColorBrush x:Key="SelectedButtonBackground" Color="#8686ff" />
+  <SolidColorBrush x:Key="SelectedButtonForeground" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="ButtonHoverBackground" Color="#ecb111" />
+  <SolidColorBrush x:Key="SeparatorBorder" Color="#AEAEAE" />
+  
+  <!-- System Colors -->
+  <SolidColorBrush x:Key="SystemControlBackgroundBrush" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="SystemControlForegroundBrush" Color="#000000" />
+  <SolidColorBrush x:Key="SystemControlBorderBrush" Color="#8686ff" />
+</ResourceDictionary>

@@ -98,6 +98,8 @@ namespace top.z7workbench.loggi.ViewModels
             // Subscribe to language changes to refresh UI
             _localizationService.LanguageChanged += OnLanguageChanged;
             
+            // Load theme from settings - this will be handled by the ThemeService initialization
+            
             LoadSampleLog(); // For testing purposes
         }
         
@@ -417,7 +419,8 @@ namespace top.z7workbench.loggi.ViewModels
                         ShowLineNumbers = ShowLineNumbers,
                         WordWrap = WordWrap,
                         LineHeight = LineHeight,
-                        Language = _localizationService.GetCurrentCulture().Name
+                        Language = _localizationService.GetCurrentCulture().Name,
+                        Theme = settingsWindow.SelectedTheme // Save the selected theme
                     };
                     _settingsService.SaveSettings(settings);
                 }

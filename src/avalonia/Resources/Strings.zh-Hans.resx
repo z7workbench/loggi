@@ -172,10 +172,13 @@
   <data name="FileDialogTitle" xml:space="preserve">
     <value>打开日志文件</value>
   </data>
-  <data name="LogFilesFilter" xml:space="preserve">
-    <value>日志文件</value>
+  <data name="SettingsThemeTitle" xml:space="preserve">
+    <value>主题</value>
   </data>
-  <data name="AllFilesFilter" xml:space="preserve">
-    <value>所有文件</value>
+  <data name="SettingsThemeLabel" xml:space="preserve">
+    <value>主题:</value>
+  </data>
+  <data name="MenuToggleTheme" xml:space="preserve">
+    <value>切换主题</value>
   </data>
 </root>

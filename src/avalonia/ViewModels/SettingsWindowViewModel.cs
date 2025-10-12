@@ -27,8 +27,12 @@ namespace top.z7workbench.loggi.ViewModels
         [ObservableProperty]
         private string _selectedLanguage = "en-US";
         
+        [ObservableProperty]
+        private string _selectedTheme = "ZeroGo's Dark"; // Will be updated in constructor
+        
         public ObservableCollection<string> AvailableFonts { get; set; } = new ObservableCollection<string>();
         public ObservableCollection<string> AvailableLanguages { get; set; } = new ObservableCollection<string>();
+        public ObservableCollection<string> AvailableThemes { get; set; } = new ObservableCollection<string> { "ZeroGo's Light", "ZeroGo's Dark" };
         
         /// <summary>
         /// Initializes a new instance of the SettingsWindowViewModel class, loading available system fonts.
@@ -37,6 +41,11 @@ namespace top.z7workbench.loggi.ViewModels
         {
             LoadAvailableFonts();
             LoadAvailableLanguages();
+            
+            // Load selected theme from settings
+            var settingsService = new Services.SettingsService();
+            var settings = settingsService.LoadSettings();
+            SelectedTheme = settings.Theme;
         }
         
         /// <summary>
@@ -139,6 +148,29 @@ namespace top.z7workbench.loggi.ViewModels
         /// <param name="value">The new language value</param>
         partial void OnSelectedLanguageChanged(string value)
         {
+        }
+        
+        /// <summary>
+        /// Callback method called when the SelectedTheme property changes.
+        /// </summary>
+        /// <param name="value">The new theme value</param>
+        partial void OnSelectedThemeChanged(string value)
+        {
+            // Save the theme to settings service when changed
+            var settingsService = new Services.SettingsService();
+            var settings = settingsService.LoadSettings();
+            settings.Theme = value;
+            settingsService.SaveSettings(settings);
+            
+            // Apply the theme
+            if (value == "ZeroGo's Light")
+            {
+                Services.ThemeService.Instance.SetTheme(Services.ThemeType.Light);
+            }
+            else if (value == "ZeroGo's Dark")
+            {
+                Services.ThemeService.Instance.SetTheme(Services.ThemeType.Dark);
+            }
         }
         
         /// <summary>
