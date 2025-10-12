@@ -4,6 +4,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Interactivity;
 using Avalonia.Styling;
 using System.Linq;
+using System;
 using top.z7workbench.loggi.ViewModels;
 using top.z7workbench.loggi.Services;
 
@@ -31,6 +32,9 @@ namespace top.z7workbench.loggi.Views
             {
                 _selectedCategoryButton.Classes.Add("selected");
             }
+            
+            // Subscribe to theme changes
+            ThemeService.Instance.ThemeChanged += OnThemeChanged;
         }
         
         /// <summary>
@@ -107,6 +111,47 @@ namespace top.z7workbench.loggi.Views
                     }
                 }
             }
+        }
+        
+        /// <summary>
+        /// Handles theme changes by refreshing the window's appearance.
+        /// </summary>
+        /// <param name="sender">The theme service</param>
+        /// <param name="newTheme">The new theme type</param>
+        private void OnThemeChanged(object sender, ThemeType newTheme)
+        {
+            // Refresh the entire window by forcing re-evaluation of all dynamic resources
+            this.InvalidateVisual();
+            
+            // Explicitly refresh child controls that might not update automatically
+            var contentScrollViewer = this.FindControl<ScrollViewer>("ContentScrollViewer");
+            if (contentScrollViewer != null)
+            {
+                contentScrollViewer.InvalidateVisual();
+            }
+            
+            // Refresh the navigation buttons
+            var fontButton = this.FindControl<Button>("FontSettingsButton");
+            var viewButton = this.FindControl<Button>("ViewOptionsButton");
+            
+            if (fontButton != null)
+            {
+                fontButton.InvalidateVisual();
+            }
+            if (viewButton != null)
+            {
+                viewButton.InvalidateVisual();
+            }
+        }
+        
+        /// <summary>
+        /// Called when the window is closed to clean up event subscriptions.
+        /// </summary>
+        protected override void OnClosed(EventArgs e)
+        {
+            // Unsubscribe from theme changes to prevent memory leaks
+            ThemeService.Instance.ThemeChanged -= OnThemeChanged;
+            base.OnClosed(e);
         }
     }
 }

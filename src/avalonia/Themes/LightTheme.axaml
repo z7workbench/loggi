@@ -43,7 +43,7 @@
   <SolidColorBrush x:Key="NavigationButtonForeground" Color="#000000" />
   <SolidColorBrush x:Key="SelectedButtonBackground" Color="#8686ff" />
   <SolidColorBrush x:Key="SelectedButtonForeground" Color="#FFFFFF" />
-  <SolidColorBrush x:Key="ButtonHoverBackground" Color="#ecb111" />
+  <SolidColorBrush x:Key="ButtonHoverBackground" Color="#ff8d00" />
   <SolidColorBrush x:Key="SeparatorBorder" Color="#AEAEAE" />
   
   <!-- System Colors -->

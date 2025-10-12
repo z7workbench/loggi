@@ -15,6 +15,27 @@
     <converters:ColorMarkConverter x:Key="ColorMarkConverter"/>
     <converters:LineHeightToPaddingConverter x:Key="LineHeightToPaddingConverter"/>
   </Window.Resources>
+  
+  <Window.Styles>
+    <!-- Enhanced styles for better contrast in both light and dark modes -->
+    <Style Selector="Button:pointerover">
+      <Setter Property="Background" Value="{DynamicResource ButtonHoverBackground}" />
+      <Setter Property="Foreground" Value="{DynamicResource SelectedButtonForeground}" />
+    </Style>
+    <Style Selector="Button:pressed">
+      <Setter Property="Background" Value="{DynamicResource PrimaryBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource SelectedButtonForeground}" />
+    </Style>
+    <Style Selector="CheckBox /template/ ToggleButton#PART_CheckedIndicator:pointerover /template/ Rectangle">
+      <Setter Property="Fill" Value="{DynamicResource SecondaryBrush}" />
+    </Style>
+    <Style Selector="ComboBox:pointerover /template/ Border#DropDownBorder">
+      <Setter Property="BorderBrush" Value="{DynamicResource SecondaryBrush}" />
+    </Style>
+    <Style Selector="CheckBox:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+  </Window.Styles>
   <DockPanel>
     <!-- Menu Bar -->
     <Menu DockPanel.Dock="Top">

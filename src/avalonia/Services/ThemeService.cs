@@ -22,6 +22,7 @@ namespace top.z7workbench.loggi.Services
         public static ThemeService Instance => _instance ??= new ThemeService();
 
         public ThemeType CurrentTheme { get; private set; } = ThemeType.Dark; // Default to dark
+        public event EventHandler<ThemeType> ThemeChanged;
 
         private ThemeService() { }
 
@@ -72,6 +73,9 @@ namespace top.z7workbench.loggi.Services
             }
             
             settingsService.SaveSettings(settings);
+            
+            // Notify listeners of theme change
+            ThemeChanged?.Invoke(this, theme);
         }
 
         public void ToggleTheme()
@@ -142,39 +146,39 @@ namespace top.z7workbench.loggi.Services
                     // Apply dark theme colors
                     resources["PrimaryColor"] = Color.Parse("#583dbf");
                     resources["SecondaryColor"] = Color.Parse("#cd6e1c");  // Note: Theme files originally had orange colors here
-                    resources["MainBackground"] = Color.Parse("#000000");
+                    resources["MainBackground"] = Color.Parse("#1e1e1e");
                     resources["TextColor"] = Color.Parse("#FFFFFF");
-                    resources["NonPrimaryBackground"] = Color.Parse("#AEAEAE");
+                    resources["NonPrimaryBackground"] = Color.Parse("#404040");
                     resources["SeparatorColor"] = Color.Parse("#EDEDED");
                     
                     // Apply dark theme brushes
                     resources["PrimaryBrush"] = new SolidColorBrush(Color.Parse("#583dbf"));
                     resources["SecondaryBrush"] = new SolidColorBrush(Color.Parse("#cd6e1c"));
-                    resources["MainBackgroundBrush"] = new SolidColorBrush(Color.Parse("#000000"));
+                    resources["MainBackgroundBrush"] = new SolidColorBrush(Color.Parse("#1e1e1e"));
                     resources["TextBrush"] = new SolidColorBrush(Color.Parse("#FFFFFF"));
-                    resources["NonPrimaryBackgroundBrush"] = new SolidColorBrush(Color.Parse("#AEAEAE"));
+                    resources["NonPrimaryBackgroundBrush"] = new SolidColorBrush(Color.Parse("#404040"));
                     resources["SeparatorBrush"] = new SolidColorBrush(Color.Parse("#EDEDED"));
                     
                     // Apply UI specific dark theme brushes (SectionHeaderBackground updated per user request)
                     resources["StatusBarBackground"] = new SolidColorBrush(Color.Parse("#583dbf"));
-                    resources["SectionHeaderBackground"] = new SolidColorBrush(Color.Parse("#AEAEAE"));  // Changed from orange to NonPrimaryBackground
-                    resources["MainContentBackground"] = new SolidColorBrush(Color.Parse("#000000"));
-                    resources["LineNumberForeground"] = new SolidColorBrush(Color.Parse("#AEAEAE"));
-                    resources["SearchBoxBackground"] = new SolidColorBrush(Color.Parse("#AEAEAE"));
-                    resources["SearchBoxForeground"] = new SolidColorBrush(Color.Parse("#000000"));
+                    resources["SectionHeaderBackground"] = new SolidColorBrush(Color.Parse("#404040"));  // Changed from #AEAEAE to #404040 to match new NonPrimaryBackground
+                    resources["MainContentBackground"] = new SolidColorBrush(Color.Parse("#1e1e1e"));
+                    resources["LineNumberForeground"] = new SolidColorBrush(Color.Parse("#404040"));  // Changed from #AEAEAE to #404040 for consistency
+                    resources["SearchBoxBackground"] = new SolidColorBrush(Color.Parse("#2d2d30"));
+                    resources["SearchBoxForeground"] = new SolidColorBrush(Color.Parse("#FFFFFF"));
                     resources["SearchBoxBorder"] = new SolidColorBrush(Color.Parse("#583dbf"));
                     resources["SearchButtonBackground"] = new SolidColorBrush(Color.Parse("#583dbf"));
                     resources["SearchButtonForeground"] = new SolidColorBrush(Color.Parse("#FFFFFF"));
                     resources["ClearButtonBackground"] = new SolidColorBrush(Color.Parse("#cd6e1c"));
                     resources["ClearButtonForeground"] = new SolidColorBrush(Color.Parse("#FFFFFF"));
-                    resources["NavigationSidebarBackground"] = new SolidColorBrush(Color.Parse("#AEAEAE"));
+                    resources["NavigationSidebarBackground"] = new SolidColorBrush(Color.Parse("#404040"));  // Changed from #AEAEAE to #404040 to match new NonPrimaryBackground
                     resources["NavigationSidebarBorder"] = new SolidColorBrush(Color.Parse("#583dbf"));
-                    resources["NavigationButtonForeground"] = new SolidColorBrush(Color.Parse("#000000"));
+                    resources["NavigationButtonForeground"] = new SolidColorBrush(Color.Parse("#FFFFFF"));
                     resources["SelectedButtonBackground"] = new SolidColorBrush(Color.Parse("#583dbf"));
                     resources["SelectedButtonForeground"] = new SolidColorBrush(Color.Parse("#FFFFFF"));
                     resources["ButtonHoverBackground"] = new SolidColorBrush(Color.Parse("#cd6e1c"));
                     resources["SeparatorBorder"] = new SolidColorBrush(Color.Parse("#EDEDED"));
-                    resources["SystemControlBackgroundBrush"] = new SolidColorBrush(Color.Parse("#000000"));
+                    resources["SystemControlBackgroundBrush"] = new SolidColorBrush(Color.Parse("#2d2d30"));
                     resources["SystemControlForegroundBrush"] = new SolidColorBrush(Color.Parse("#FFFFFF"));
                     resources["SystemControlBorderBrush"] = new SolidColorBrush(Color.Parse("#583dbf"));
                     
