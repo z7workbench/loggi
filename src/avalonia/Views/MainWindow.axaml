@@ -63,7 +63,7 @@
     </Border>
     
     <!-- Main content area with split view -->
-    <Grid ColumnDefinitions="*, *">
+    <Grid Name="MainContentGrid" ColumnDefinitions="*, Auto, *">
       <!-- Left side: Main log content -->
       <DockPanel Grid.Column="0">
         <Border DockPanel.Dock="Top" Background="{DynamicResource SectionHeaderBackground}" Padding="5">
@@ -72,8 +72,8 @@
         <Border Background="{DynamicResource MainContentBackground}" BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="1">
           <DockPanel>
             <!-- Fixed Line Numbers Panel -->
-            <Border DockPanel.Dock="Left" 
-                    Width="{StaticResource LineNumberWidth}" 
+            <Border DockPanel.Dock="Left"
+                    Width="{StaticResource LineNumberWidth}"
                     Background="{DynamicResource MainContentBackground}">
               <ScrollViewer Name="LineNumbersScrollViewer"
                             VerticalScrollBarVisibility="Hidden"
@@ -84,11 +84,11 @@
                   </ItemsRepeater.Layout>
                   <ItemsRepeater.ItemTemplate>
                     <DataTemplate>
-                      <TextBlock Text="{Binding LineNumber, StringFormat='{}{0:0000}'}" 
-                                 Foreground="{DynamicResource LineNumberForeground}" 
-                                 FontFamily="{Binding FontFamily, FallbackValue=Consolas}" 
+                      <TextBlock Text="{Binding LineNumber, StringFormat='{}{0:0000}'}"
+                                 Foreground="{DynamicResource LineNumberForeground}"
+                                 FontFamily="{Binding FontFamily, FallbackValue=Consolas}"
                                  FontSize="{Binding FontSize, FallbackValue=12}"
-                                 IsVisible="{Binding ShowLineNumbers, FallbackValue=True}" 
+                                 IsVisible="{Binding ShowLineNumbers, FallbackValue=True}"
                                  HorizontalAlignment="Right"
                                  VerticalAlignment="Top"
                                  Padding="{Binding LineHeight, Converter={StaticResource LineHeightToPaddingConverter}, FallbackValue='5,5,5,5'}"
@@ -98,10 +98,10 @@
                 </ItemsRepeater>
               </ScrollViewer>
             </Border>
-            
+
             <!-- Scrollable Content Panel -->
             <Border Background="{DynamicResource MainContentBackground}">
-              <ScrollViewer Name="LogScrollViewer" 
+              <ScrollViewer Name="LogScrollViewer"
                             HorizontalScrollBarVisibility="Auto"
                             VerticalScrollBarVisibility="Auto"
                             ScrollChanged="OnContentScrollChanged">
@@ -130,10 +130,10 @@
                             </MenuItem>
                           </ContextMenu>
                         </Border.ContextMenu>
-                        <TextBlock Text="{Binding Content}" 
-                                   FontFamily="{Binding FontFamily, FallbackValue=Consolas}" 
+                        <TextBlock Text="{Binding Content}"
+                                   FontFamily="{Binding FontFamily, FallbackValue=Consolas}"
                                    FontSize="{Binding FontSize, FallbackValue=12}"
-                                   TextWrapping="{Binding ContentTextWrapping, FallbackValue=NoWrap}" 
+                                   TextWrapping="{Binding ContentTextWrapping, FallbackValue=NoWrap}"
                                    Foreground="{DynamicResource TextBrush}" />
                       </Border>
                     </DataTemplate>
@@ -144,9 +144,19 @@
           </DockPanel>
         </Border>
       </DockPanel>
-      
+
+      <!-- Draggable splitter between panels -->
+      <Border Grid.Column="1"
+              Width="6"
+              Background="{DynamicResource SeparatorBrush}"
+              Cursor="SizeWestEast"
+              PointerPressed="Splitter_PointerPressed"
+              PointerMoved="Splitter_PointerMoved"
+              PointerReleased="Splitter_PointerReleased"
+              HorizontalAlignment="Stretch" />
+
       <!-- Right side: Search panel with dedicated results view -->
-      <Border Grid.Column="1" Background="{DynamicResource MainBackgroundBrush}" BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="1">
+      <Border Grid.Column="2" Background="{DynamicResource MainBackgroundBrush}" BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="1">
         <DockPanel>
           <!-- Search controls at the top -->
           <Border DockPanel.Dock="Top" Background="{DynamicResource SectionHeaderBackground}" Padding="8">
@@ -154,34 +164,34 @@
               <!-- Search input and buttons -->
               <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,5">
                 <TextBox Name="SearchTextBox" Text="{Binding SearchQuery}" Watermark="{converters:Localization SearchWatermark}" Width="250" Margin="0,0,10,0" Background="{DynamicResource SearchBoxBackground}" Foreground="{DynamicResource SearchBoxForeground}" BorderBrush="{DynamicResource SearchBoxBorder}" />
-                <Button Name="SearchButton" Content="{converters:Localization SearchButton}" Margin="0,0,5,0" 
+                <Button Name="SearchButton" Content="{converters:Localization SearchButton}" Margin="0,0,5,0"
                         Command="{Binding SearchCommand}" Background="{DynamicResource SearchButtonBackground}" Foreground="{DynamicResource SearchButtonForeground}" />
-                <Button Name="ClearButton" Content="{converters:Localization ClearButton}" 
+                <Button Name="ClearButton" Content="{converters:Localization ClearButton}"
                         Command="{Binding ClearResultsCommand}" Background="{DynamicResource ClearButtonBackground}" Foreground="{DynamicResource ClearButtonForeground}" />
               </StackPanel>
 
               <!-- Search options -->
               <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,5,0,0">
-                <CheckBox Name="CaseSensitiveCheckBox" Content="{converters:Localization CaseSensitive}" 
+                <CheckBox Name="CaseSensitiveCheckBox" Content="{converters:Localization CaseSensitive}"
                           IsChecked="{Binding IsCaseSensitive}" Margin="0,0,10,0" Foreground="{DynamicResource TextBrush}" />
-                <CheckBox Name="UseRegexCheckBox" Content="{converters:Localization UseRegex}" 
+                <CheckBox Name="UseRegexCheckBox" Content="{converters:Localization UseRegex}"
                           IsChecked="{Binding UseRegex}" Foreground="{DynamicResource TextBrush}" />
               </StackPanel>
             </Grid>
           </Border>
-          
+
           <!-- Search results header -->
           <Border DockPanel.Dock="Top" Background="{DynamicResource SectionHeaderBackground}" Padding="5">
-            <TextBlock Name="SearchResultsCount" 
-                       Text="{Binding SearchResults.Count, StringFormat='Search Results: {0}'}" 
+            <TextBlock Name="SearchResultsCount"
+                       Text="{Binding SearchResults.Count, StringFormat='Search Results: {0}'}"
                        FontWeight="Bold" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}" />
           </Border>
-          
+
           <!-- Search results list -->
           <DockPanel Name="SearchResultsPanel">
             <!-- Fixed Line Numbers Panel -->
-            <Border DockPanel.Dock="Left" 
-                    Width="{StaticResource LineNumberWidth}" 
+            <Border DockPanel.Dock="Left"
+                    Width="{StaticResource LineNumberWidth}"
                     Background="{DynamicResource MainContentBackground}">
               <ScrollViewer Name="SearchLineNumbersScrollViewer"
                             VerticalScrollBarVisibility="Hidden"
@@ -192,11 +202,11 @@
                   </ItemsRepeater.Layout>
                   <ItemsRepeater.ItemTemplate>
                     <DataTemplate>
-                      <TextBlock Text="{Binding LineNumber, StringFormat='{}{0:0000}'}" 
-                                 Foreground="{DynamicResource LineNumberForeground}" 
-                                 FontFamily="{Binding FontFamily, FallbackValue=Consolas}" 
+                      <TextBlock Text="{Binding LineNumber, StringFormat='{}{0:0000}'}"
+                                 Foreground="{DynamicResource LineNumberForeground}"
+                                 FontFamily="{Binding FontFamily, FallbackValue=Consolas}"
                                  FontSize="{Binding FontSize, FallbackValue=12}"
-                                 IsVisible="{Binding ShowLineNumbers, FallbackValue=True}" 
+                                 IsVisible="{Binding ShowLineNumbers, FallbackValue=True}"
                                  HorizontalAlignment="Right"
                                  VerticalAlignment="Top"
                                  Padding="{Binding LineHeight, Converter={StaticResource LineHeightToPaddingConverter}, FallbackValue='5,5,5,5'}"
@@ -206,7 +216,7 @@
                 </ItemsRepeater>
               </ScrollViewer>
             </Border>
-            
+
             <!-- Scrollable Content Panel -->
             <Border Background="{DynamicResource MainContentBackground}">
               <ScrollViewer Name="ResultsScrollViewer"
@@ -241,10 +251,10 @@
                             </MenuItem>
                           </ContextMenu>
                         </Border.ContextMenu>
-                        <TextBlock Text="{Binding Content}" 
-                                   FontFamily="{Binding FontFamily, FallbackValue=Consolas}" 
+                        <TextBlock Text="{Binding Content}"
+                                   FontFamily="{Binding FontFamily, FallbackValue=Consolas}"
                                    FontSize="{Binding FontSize, FallbackValue=12}"
-                                   TextWrapping="{Binding ContentTextWrapping, FallbackValue=NoWrap}" 
+                                   TextWrapping="{Binding ContentTextWrapping, FallbackValue=NoWrap}"
                                    Foreground="{DynamicResource TextBrush}" />
                       </Border>
                     </DataTemplate>

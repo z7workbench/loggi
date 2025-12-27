@@ -7,6 +7,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using System;
 using top.z7workbench.loggi.Services;
 
@@ -20,6 +21,10 @@ namespace top.z7workbench.loggi.Views
         private TextBlock _searchResultsCountTextBlock;
         private ContextMenu _logLineContextMenu;
         private ContextMenu _resultLineContextMenu;
+
+        // Splitter dragging variables
+        private bool _isSplitterDragging = false;
+        private Point _lastMousePosition;
 
         /// <summary>
         /// Initializes a new instance of the MainWindow class, setting up the UI components and event connections.
@@ -435,6 +440,79 @@ namespace top.z7workbench.loggi.Views
         {
             // This will be handled by the command in the ViewModel
             // The context menu is bound to the specific item's data context
+        }
+
+        // No need for the FindDescendantOfType method since we're using the named control directly
+
+        /// <summary>
+        /// Handles the PointerPressed event for the splitter, starting the drag operation.
+        /// </summary>
+        /// <param name="sender">The splitter border that was clicked</param>
+        /// <param name="e">Pointer event arguments</param>
+        private void Splitter_PointerPressed(object sender, Avalonia.Input.PointerPressedEventArgs e)
+        {
+            _isSplitterDragging = true;
+            _lastMousePosition = e.GetPosition(this);
+            e.Pointer.Capture(sender as IInputElement);
+        }
+
+        /// <summary>
+        /// Handles the PointerMoved event for the splitter, updating the column widths during drag.
+        /// </summary>
+        /// <param name="sender">The splitter border that is being dragged</param>
+        /// <param name="e">Pointer event arguments</param>
+        private void Splitter_PointerMoved(object sender, Avalonia.Input.PointerEventArgs e)
+        {
+            if (!_isSplitterDragging) return;
+
+            var currentMousePosition = e.GetPosition(this);
+            var deltaX = currentMousePosition.X - _lastMousePosition.X;
+
+            if (Math.Abs(deltaX) > 0)
+            {
+                // Get the named grid directly
+                var grid = this.FindControl<Grid>("MainContentGrid");
+                if (grid != null)
+                {
+                    var currentColumnDefinitions = grid.ColumnDefinitions;
+
+                    // Get the current widths of the columns
+                    var leftColumn = currentColumnDefinitions[0];
+                    var rightColumn = currentColumnDefinitions[2];
+
+                    // Calculate the total star value
+                    var totalStarValue = leftColumn.Width.Value + rightColumn.Width.Value;
+
+                    // Calculate the proportional change based on the grid's actual width
+                    var gridWidth = grid.Bounds.Width - 6; // Subtract splitter width
+                    if (gridWidth > 0)
+                    {
+                        // Calculate the change ratio based on the grid width
+                        var changeRatio = deltaX / gridWidth;
+
+                        // Calculate new star values
+                        var newLeftStarValue = Math.Max(leftColumn.Width.Value + changeRatio * totalStarValue, 0.1); // Minimum 0.1 to prevent collapse
+                        var newRightStarValue = Math.Max(rightColumn.Width.Value - changeRatio * totalStarValue, 0.1); // Minimum 0.1 to prevent collapse
+
+                        // Update the column widths
+                        leftColumn.Width = new GridLength(newLeftStarValue, GridUnitType.Star);
+                        rightColumn.Width = new GridLength(newRightStarValue, GridUnitType.Star);
+                    }
+                }
+
+                _lastMousePosition = currentMousePosition;
+            }
+        }
+
+        /// <summary>
+        /// Handles the PointerReleased event for the splitter, ending the drag operation.
+        /// </summary>
+        /// <param name="sender">The splitter border that was released</param>
+        /// <param name="e">Pointer event arguments</param>
+        private void Splitter_PointerReleased(object sender, Avalonia.Input.PointerReleasedEventArgs e)
+        {
+            _isSplitterDragging = false;
+            e.Pointer.Capture(null);
         }
     }
 }
