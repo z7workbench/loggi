@@ -41,7 +41,11 @@ class AppViewModelTest {
             assertEquals("row 42 ERROR", vm.lineText(42))
 
             vm.startSearch()
-            waitFor("search to finish") { !vm.searching }
+            // Wait for the actual outcome, not the `searching` flag: the
+            // flag starts `false` and is only set `true` inside the launched
+            // coroutine, so a slow scheduler could make `!vm.searching` pass
+            // before the search even started (CI flake).
+            waitFor("search to finish") { vm.matchesFound == 1_000L }
             assertEquals(1_000, vm.matchesFound)
             // pins ∪ matches: 1000 matches + pin 5 is also a match → union = 1000.
             assertEquals(1_000, vm.results.size)
