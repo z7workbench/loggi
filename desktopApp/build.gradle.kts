@@ -78,8 +78,10 @@ compose.desktop {
             // jpackage turns this into:
             //   - macOS: CFBundleDocumentTypes in Info.plist (LSItemContentTypes
             //     = [public.data]);
-            //   - Windows: registry entries under HKCR\* — we additionally
-            //     re-register HKCU\* at runtime (per-user, locale-aware);
+            //   - Windows: no jpackage association — jpackage would emit a
+            //     FA*.properties temp file whose '*' is invalid in Windows
+            //     filenames (packageExe fails); the verb comes from the
+            //     runtime HKCU\*\shell\Loggi registration instead;
             //   - Linux: MimeType= in the installed .desktop file.
             macOS {
                 iconFile.set(rootProject.file("packaging/icon.icns"))
@@ -115,7 +117,7 @@ compose.desktop {
                 iconFile.set(rootProject.file("packaging/icon.ico"))
                 // NSIS requires MAJOR.MINOR.BUILD; jpackage rejects "1.0".
                 exePackageVersion = padVersion(loggiVersion)
-                fileAssociation(extension = "*", mimeType = "public.data", description = "Any file")
+                // No fileAssociation here: see the M11 comment above.
                 // Windows Authenticode signing is applied post-build in
                 // `release.yml` via signtool. The DSL does not expose
                 // `--win-sign-tool` directly, so a post-build step in the

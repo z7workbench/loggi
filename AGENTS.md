@@ -199,10 +199,11 @@ shows up under right-click for any file extension on every OS:
   `Info.plist` (`CFBundleDocumentTypes`, `LSItemContentTypes`) — no runtime
   work.
 - Windows: runtime registration to `HKCU\Software\Classes\*\shell\Loggi`
-  via `os.WindowsFileAssociation` (`reg.exe`); jpackage's HKCR\* verb is
-  HKLM-only (admin required), so per-user HKCU is re-registered on first
-  run and on every locale change so the verb display name follows the UI
-  language.
+  via `os.WindowsFileAssociation` (`reg.exe`); no jpackage-level
+  association (jpackage would emit a `FA*.properties` temp file, and
+  Windows forbids `*` in filenames — `packageExe` would fail), so the
+  per-user HKCU entry is re-registered on first run and on every locale
+  change so the verb display name follows the UI language.
 - Linux: jpackage writes the system-wide `.desktop` with `MimeType=*`;
   `os.LinuxFileAssociation` also writes a per-user copy in
   `XDG_DATA_HOME/applications/loggi-user.desktop` (atomic write, locale-
