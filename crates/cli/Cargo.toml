@@ -1,0 +1,22 @@
+[package]
+name = "loggi-cli"
+description = "loggi command line tool (info / search / tail) over loggi-engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "loggi"
+path = "src/main.rs"
+
+[dependencies]
+loggi-engine.workspace = true
+clap = { version = "4", features = ["derive"] }
+serde.workspace = true
+serde_json.workspace = true
+anyhow = "1"
+
+[dev-dependencies]
+assert_cmd = "2"
+predicates = "3"
+tempfile = "3"
