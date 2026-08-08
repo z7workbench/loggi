@@ -1,0 +1,19 @@
+[package]
+name = "loggi-mcp"
+description = "MCP (stdio JSON-RPC) server over the loggi engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "loggi-mcp"
+path = "src/main.rs"
+
+[dependencies]
+loggi-engine.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+anyhow = "1"
+
+[dev-dependencies]
+tempfile = "3"
