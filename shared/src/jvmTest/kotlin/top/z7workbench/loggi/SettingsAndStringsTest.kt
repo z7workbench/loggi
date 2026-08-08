@@ -8,12 +8,21 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import org.junit.Rule
 import org.junit.Test
 import java.nio.file.Files
+import java.lang.reflect.Modifier
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import top.z7workbench.loggi.i18n.AppLocale
+import top.z7workbench.loggi.i18n.DeStrings
 import top.z7workbench.loggi.i18n.EnStrings
+import top.z7workbench.loggi.i18n.FrStrings
+import top.z7workbench.loggi.i18n.RuStrings
 import top.z7workbench.loggi.i18n.Strings
+import top.z7workbench.loggi.i18n.ZhHantStrings
 import top.z7workbench.loggi.i18n.ZhStrings
+import top.z7workbench.loggi.i18n.resolveLocale
+import top.z7workbench.loggi.i18n.stringsFor
 import top.z7workbench.loggi.settings.AppSettings
+import top.z7workbench.loggi.settings.ColorScheme
 import top.z7workbench.loggi.settings.HighlighterRule
 import top.z7workbench.loggi.settings.LocaleSetting
 import top.z7workbench.loggi.settings.SettingsStore
@@ -31,6 +40,7 @@ class SettingsTest {
         val store = SettingsStore(file)
         val settings = AppSettings(
             themeMode = ThemeMode.DARK,
+            colorScheme = ColorScheme.GREEN,
             locale = LocaleSetting.ZH,
             fontSizeSp = 15f,
             highlighters = listOf(HighlighterRule("ERROR", 0x66FF5252)),
@@ -124,27 +134,81 @@ class ThemeTest {
         0.2126 * c.red + 0.7152 * c.green + 0.0722 * c.blue
 }
 
-class StringsTest {
-    /** Every member declared on [Strings] must be overridden by [ZhStrings]. */
+class ColorSchemeTest {
+    /** Every scheme must be unique and carry a distinct light + dark variant. */
     @Test
-    fun zhOverridesEveryString() {
-        val missing = Strings::class.java.declaredMethods
-            .filter { it.name !in setOf("wait", "equals", "hashCode", "toString", "getClass", "notify", "notifyAll") }
-            .filter { method ->
-                val impl = runCatching {
-                    ZhStrings::class.java.getMethod(method.name, *method.parameterTypes)
-                }.getOrNull()
-                impl == null || impl.declaringClass == Strings::class.java
-            }
-            .map { it.name }
-        assertTrue(missing.isEmpty(), "zh-Hans missing overrides for: $missing")
+    fun schemesHaveDistinctPalettes() {
+        val lightPrimaries = ColorScheme.entries.map { Color(it.lightPrimary) }
+        val darkPrimaries = ColorScheme.entries.map { Color(it.darkPrimary) }
+        assertEquals(lightPrimaries.size, lightPrimaries.distinct().size, "light primaries must be pairwise distinct")
+        assertEquals(darkPrimaries.size, darkPrimaries.distinct().size, "dark primaries must be pairwise distinct")
+        ColorScheme.entries.forEach { scheme ->
+            assertTrue(
+                Color(scheme.lightPrimary) != Color(scheme.darkPrimary),
+                "${scheme} light and dark variants must differ",
+            )
+        }
+    }
+}
+
+class StringsTest {
+    /** Every member declared on [Strings] must be overridden by each locale. */
+    @Test
+    fun everyLocaleOverridesEveryString() {
+        val localeClasses = listOf(
+            EnStrings::class.java,
+            ZhStrings::class.java,
+            ZhHantStrings::class.java,
+            FrStrings::class.java,
+            DeStrings::class.java,
+            RuStrings::class.java,
+        )
+        localeClasses.forEach { locale ->
+            val missing = Strings::class.java.declaredMethods
+                .filter { Modifier.isAbstract(it.modifiers) }
+                .filter { method ->
+                    val impl = runCatching {
+                        locale.getMethod(method.name, *method.parameterTypes)
+                    }.getOrNull()
+                    impl == null || impl.declaringClass == Strings::class.java
+                }
+                .map { it.name }
+            assertTrue(
+                missing.isEmpty(),
+                "${locale.simpleName} missing overrides for: $missing",
+            )
+        }
     }
 
     @Test
-    fun enAndZhProduceDifferentText() {
+    fun localesProduceDifferentText() {
         val en = EnStrings()
-        val zh = ZhStrings()
-        assertTrue(en.menuFile != zh.menuFile)
-        assertTrue(en.matchesCount(5) != zh.matchesCount(5))
+        val locales = listOf(
+            ZhStrings(),
+            ZhHantStrings(),
+            FrStrings(),
+            DeStrings(),
+            RuStrings(),
+        )
+        locales.forEach { locale ->
+            assertTrue(locale.menuFile != en.menuFile, "${locale::class.simpleName} shares menuFile with English")
+            assertTrue(locale.matchesCount(5) != en.matchesCount(5), "${locale::class.simpleName} shares matchesCount with English")
+        }
+    }
+
+    @Test
+    fun resolveLocaleMapsSystemLocales() {
+        assertEquals(AppLocale.EN, resolveLocale(LocaleSetting.EN))
+        assertEquals(AppLocale.ZH, resolveLocale(LocaleSetting.ZH))
+        assertEquals(AppLocale.ZH_HANT, resolveLocale(LocaleSetting.ZH_HANT))
+        assertEquals(AppLocale.FR, resolveLocale(LocaleSetting.FR))
+        assertEquals(AppLocale.DE, resolveLocale(LocaleSetting.DE))
+        assertEquals(AppLocale.RU, resolveLocale(LocaleSetting.RU))
+        assertTrue(stringsFor(AppLocale.EN) is EnStrings)
+        assertTrue(stringsFor(AppLocale.ZH) is ZhStrings)
+        assertTrue(stringsFor(AppLocale.ZH_HANT) is ZhHantStrings)
+        assertTrue(stringsFor(AppLocale.FR) is FrStrings)
+        assertTrue(stringsFor(AppLocale.DE) is DeStrings)
+        assertTrue(stringsFor(AppLocale.RU) is RuStrings)
     }
 }

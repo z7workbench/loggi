@@ -40,7 +40,9 @@ macOS, and Linux.
 - **Desktop app** (`shared` + `desktopApp` Gradle modules): Kotlin Multiplatform
   (Compose Multiplatform, JVM target) — virtualized main view over engine chunks, streaming
   search with three layouts (side / bottom / detached window), tabs (horizontal or vertical),
-  drag-selection copy, text highlighting, pinned lines, light/dark themes, EN + zh-Hans i18n,
+  drag-selection copy, text highlighting, pinned lines, light/dark themes with
+  nine color schemes (violet/blue/teal/green/orange/amber/rose/slate/indigo),
+  6-locale i18n (EN, zh-Hans, zh-Hant, FR, DE, RU),
   `loggi.conf` session persistence, minimap overview strip. Rust interop is JNI
   (`crates/engine-jni` cdylib; UniFFI was considered and rejected for hot-buffer control —
   see `docs/PLAN.md` §2).

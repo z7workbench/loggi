@@ -1,7 +1,11 @@
 package top.z7workbench.loggi.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.PointerInputScope
@@ -38,6 +43,8 @@ import androidx.compose.ui.input.pointer.isTertiaryPressed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -52,29 +59,62 @@ import top.z7workbench.loggi.vm.FileTab
 
 /**
  * File tab bar: horizontal (top) or vertical (left) placement, close actions,
- * middle-click close, drag reorder, right-click context menu. Hidden only
- * when no file is open (M8.5: tabs must always be discoverable).
+ * middle-click close, drag reorder, right-click context menu. A "+" new-tab
+ * button is pinned at the strip's end (browser-style; replaces the toolbar's
+ * Open button) and stays visible even with zero tabs.
  */
 @Composable
-fun TabBar(app: AppViewModel, modifier: Modifier = Modifier) {
-    if (app.tabs.isEmpty()) return
+fun TabBar(app: AppViewModel, onNewTab: () -> Unit, modifier: Modifier = Modifier) {
     when (app.settings.tabPlacement) {
         TabPlacement.HORIZONTAL -> Row(
-            modifier.fillMaxWidth().height(34.dp).horizontalScroll(rememberScrollState()),
+            modifier.fillMaxWidth().height(34.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            app.tabs.forEachIndexed { index, tab ->
-                TabChip(app, tab, index, vertical = false)
+            Row(
+                Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                app.tabs.forEachIndexed { index, tab ->
+                    TabChip(app, tab, index, vertical = false)
+                }
             }
+            NewTabButton(vertical = false, onClick = onNewTab)
         }
 
         TabPlacement.VERTICAL -> Column(
-            modifier.fillMaxHeight().width(180.dp).verticalScroll(rememberScrollState()),
+            modifier.fillMaxHeight().width(180.dp),
         ) {
-            app.tabs.forEachIndexed { index, tab ->
-                TabChip(app, tab, index, vertical = true)
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                app.tabs.forEachIndexed { index, tab ->
+                    TabChip(app, tab, index, vertical = true)
+                }
             }
+            NewTabButton(vertical = true, onClick = onNewTab)
         }
+    }
+}
+
+/** "+" new-tab button pinned at the end of the tab strip (opens the file picker). */
+@Composable
+private fun NewTabButton(vertical: Boolean, onClick: () -> Unit) {
+    val strings = LocalStrings.current
+    val scheme = MaterialTheme.colorScheme
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+    Box(
+        Modifier
+            .then(if (vertical) Modifier.fillMaxWidth().height(26.dp) else Modifier.size(26.dp))
+            .clip(RoundedCornerShape(4.dp))
+            .semantics { contentDescription = strings.menuOpen }
+            .background(if (hovered) scheme.surfaceVariant else Color.Transparent)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text("+", fontSize = 16.sp, color = scheme.onSurface, maxLines = 1)
     }
 }
 

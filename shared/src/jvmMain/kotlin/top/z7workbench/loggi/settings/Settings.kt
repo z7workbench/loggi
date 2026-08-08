@@ -8,7 +8,24 @@ import kotlinx.serialization.json.Json
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
-enum class LocaleSetting { SYSTEM, EN, ZH }
+/**
+ * UI color scheme. Every scheme ships a light and a dark variant (chosen by
+ * [ThemeMode]); the seed primary colors also drive the swatch picker in the
+ * settings window.
+ */
+enum class ColorScheme(val lightPrimary: Long, val darkPrimary: Long) {
+    VIOLET(0xFF5E35B1, 0xFFB39DDB),
+    BLUE(0xFF0277BD, 0xFF4FC3F7),
+    TEAL(0xFF00695C, 0xFF4DB6AC),
+    GREEN(0xFF2E7D32, 0xFF81C784),
+    ORANGE(0xFFE65100, 0xFFFFB74D),
+    AMBER(0xFF9A6A00, 0xFFFFCA28),
+    ROSE(0xFFC62828, 0xFFEF9A9A),
+    SLATE(0xFF546E7A, 0xFF90A4AE),
+    INDIGO(0xFF283593, 0xFF9FA8DA),
+}
+
+enum class LocaleSetting { SYSTEM, EN, ZH, ZH_HANT, FR, DE, RU }
 
 enum class TabPlacement { HORIZONTAL, VERTICAL }
 
@@ -47,6 +64,7 @@ data class TabSession(
 @Serializable
 data class AppSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val colorScheme: ColorScheme = ColorScheme.VIOLET,
     val locale: LocaleSetting = LocaleSetting.SYSTEM,
     val fontFamily: String = FONT_MONOSPACE,
     /** UI font family; [FONT_SYSTEM] = the OS default UI font. */

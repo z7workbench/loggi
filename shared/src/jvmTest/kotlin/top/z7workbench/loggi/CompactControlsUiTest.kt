@@ -7,8 +7,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextClearance
@@ -69,9 +69,9 @@ class CompactControlsUiTest {
     fun spinnerButtonsNudgeAndClamp() = runComposeUiTest {
         var value = 32f
         setContent { MaterialTheme { CompactNumberSpinner(value, { value = it }, 8f..32f, 1f, 0) } }
-        onNodeWithText("▲").performClick()
+        onNodeWithContentDescription("Increase").performClick()
         runOnIdle { assertEquals(32f, value) } // clamped at the range end
-        onNodeWithText("▼").performClick()
+        onNodeWithContentDescription("Decrease").performClick()
         runOnIdle { assertEquals(31f, value) }
     }
 
@@ -89,7 +89,7 @@ class CompactControlsUiTest {
     fun decimalsRoundOnCommit() = runComposeUiTest {
         var value = 1.2f
         setContent { MaterialTheme { CompactNumberSpinner(value, { value = it }, 1f..2f, 0.05f, 2) } }
-        onNodeWithText("▲").performClick()
+        onNodeWithContentDescription("Increase").performClick()
         runOnIdle { assertEquals(1.25f, value) }
         onNode(hasSetTextAction()).performTextClearance()
         onNode(hasSetTextAction()).performTextInput("1.6666")

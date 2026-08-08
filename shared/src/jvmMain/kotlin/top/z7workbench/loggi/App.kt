@@ -79,7 +79,7 @@ fun FrameWindowScope.App(app: AppViewModel, onExit: () -> Unit) {
         LocalStrings provides strings,
         LocalColorPickerHost provides { req -> app.colorPicker = req },
     ) {
-        LoggiTheme(app.settings.themeMode, rememberUiFontFamily(app.settings.uiFontFamily)) {
+        LoggiTheme(app.settings.themeMode, app.settings.colorScheme, rememberUiFontFamily(app.settings.uiFontFamily)) {
             AppMenuBar(app, onExit)
             // The top-level Surface sets `LocalContentColor` from the themed
             // background (via M3's contrast algorithm), so any `Text` deeper
@@ -95,9 +95,13 @@ fun FrameWindowScope.App(app: AppViewModel, onExit: () -> Unit) {
                 Column(Modifier.fillMaxSize()) {
                     Toolbar(app)
                     Row(Modifier.weight(1f)) {
-                        if (app.settings.tabPlacement == TabPlacement.VERTICAL) TabBar(app)
+                        if (app.settings.tabPlacement == TabPlacement.VERTICAL) {
+                            TabBar(app, onNewTab = { chooseFiles().forEach(app::openFile) })
+                        }
                         Column(Modifier.weight(1f)) {
-                            if (app.settings.tabPlacement == TabPlacement.HORIZONTAL) TabBar(app)
+                            if (app.settings.tabPlacement == TabPlacement.HORIZONTAL) {
+                                TabBar(app, onNewTab = { chooseFiles().forEach(app::openFile) })
+                            }
                             Box(Modifier.weight(1f)) { ActiveTabContent(app) }
                         }
                     }
@@ -111,7 +115,7 @@ fun FrameWindowScope.App(app: AppViewModel, onExit: () -> Unit) {
     }
 }
 
-/** Compact one-click toolbar (M8.5): open, follow, go-to-line, wrap, layout, settings. */
+/** Compact one-click toolbar (M8.5): follow, go-to-line, wrap, layout, unpin, settings. */
 @Composable
 private fun Toolbar(app: AppViewModel) {
     val strings = LocalStrings.current
@@ -120,7 +124,6 @@ private fun Toolbar(app: AppViewModel) {
         Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        CompactButton(strings.menuOpen, onClick = { chooseFiles().forEach(app::openFile) })
         CompactButton(
             strings.menuFollow,
             onClick = { vm?.let { it.follow = !it.follow } },

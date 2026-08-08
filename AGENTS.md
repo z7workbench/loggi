@@ -120,13 +120,16 @@ with preset or custom color — matched in the engine per line and cached,
 pins), search bar + streaming results with history, three layouts
 (side/top/detached search window) with persisted splitter, tabs (close /
 close-others / left / right / all, middle-click close, drag reorder,
-horizontal/vertical placement, rename, copy path, open folder), display
+horizontal/vertical placement, rename, copy path, open folder, browser-style
+"+" new-tab button pinned at the strip end (always visible, opens the file
+picker — replaced the toolbar's Open button), display
 settings (font size, line spacing, wrap, tab stop; log font family via generic
 aliases + Skia-enumerated system families; separate UI font family for the
 whole interface, defaulting to the OS font, applied through the theme
 typography), themes (follow system / force light / force dark, live
-OS listener via skiko polling), i18n EN + zh-Hans via `i18n/Strings.kt` (a
-reflection test asserts the zh-Hans override is complete; switch is live),
+OS listener via skiko polling), i18n EN / zh-Hans / zh-Hant / FR / DE / RU,
+one class per locale under `i18n/` (`Strings.kt` base + one file per language;
+a reflection test asserts every locale overrides every member; switch is live),
 `loggi.conf` persistence + session restore, minimap overview strip. Pins are
 kept UI-side (`ResultsModel` maintains the sorted union pins ∪ matches), not
 in the engine. JVM smoke test (`shared/src/jvmTest`) exercises the full
@@ -134,7 +137,7 @@ bridge contract.
 
 M8.5 (2026-08-08) closed the M8 gaps: compact control set (`ui/Compact.kt`)
 replacing stock M3 padding in the search bar / menus / settings rows, a
-toolbar (open/follow/go-to-line/wrap/layout dropdown/unpin-all/settings),
+toolbar (follow/go-to-line/wrap/layout dropdown/unpin-all/settings),
 tab bar always visible (auto-hide removed), settings in their own window,
 reopen-on-startup toggle, system font picker via Skia `FontMgr`, whole-line
 + current-line highlight, horizontal scroll (log view when wrap is off +

@@ -1,5 +1,6 @@
 package top.z7workbench.loggi.ui
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,8 +38,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Density
@@ -334,22 +339,29 @@ fun CompactNumberSpinner(
             },
         )
         Column(Modifier.padding(start = 2.dp)) {
-            SpinArrow("▲") { nudge(1f) }
-            SpinArrow("▼", Modifier.padding(top = 1.dp)) { nudge(-1f) }
+            SpinArrow(up = true) { nudge(1f) }
+            SpinArrow(up = false, Modifier.padding(top = 1.dp)) { nudge(-1f) }
         }
     }
 }
 
+/**
+ * One spinner step button. The triangle is drawn on a [Canvas] (a filled
+ * path), not rendered as a text glyph — glyphs like "▲" carry font-internal
+ * padding and line-box overhang, so they get clipped in tiny boxes; a path
+ * is always crisp at any size.
+ */
 @Composable
-private fun SpinArrow(glyph: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+private fun SpinArrow(up: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     val interactionSource = remember { MutableInteractionSource() }
     val hovered by interactionSource.collectIsHoveredAsState()
     Box(
         modifier
-            .width(18.dp)
-            .height(12.dp)
+            .width(16.dp)
+            .height(11.dp)
             .clip(RoundedCornerShape(3.dp))
+            .semantics { contentDescription = if (up) "Increase" else "Decrease" }
             .background(if (hovered) scheme.surfaceVariant else Color.Transparent)
             .clickable(
                 interactionSource = interactionSource,
@@ -358,6 +370,22 @@ private fun SpinArrow(glyph: String, modifier: Modifier = Modifier, onClick: () 
             ),
         contentAlignment = Alignment.Center,
     ) {
-        Text(glyph, fontSize = 9.sp, color = scheme.onSurface, maxLines = 1)
+        Canvas(Modifier.size(7.dp, 4.dp)) {
+            val w = size.width
+            val h = size.height
+            val path = Path().apply {
+                if (up) {
+                    moveTo(w / 2f, 0f)
+                    lineTo(w, h)
+                    lineTo(0f, h)
+                } else {
+                    moveTo(0f, 0f)
+                    lineTo(w, 0f)
+                    lineTo(w / 2f, h)
+                }
+                close()
+            }
+            drawPath(path, color = scheme.onSurface)
+        }
     }
 }

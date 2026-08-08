@@ -39,7 +39,9 @@ Linux 原生安装程序。
 - **桌面应用**（`shared` + `desktopApp` Gradle 模块）：Kotlin
   Multiplatform（Compose Multiplatform，JVM 目标）——基于引擎分块的
   虚拟化主视图、三种布局的流式搜索（左右 / 上下 / 独立窗口）、标签页
-  （水平或垂直）、拖拽选择复制、文本高亮、固定行、明暗主题、中英双语
+  （水平或垂直）、拖拽选择复制、文本高亮、固定行、明暗主题 + 九种
+  配色方案（紫罗兰 / 蓝 / 青 / 绿 / 橙 / 琥珀 / 玫红 / 石墨 / 靛蓝）、
+  六语言界面（英 / 简中 / 繁中 / 法 / 德 / 俄）、
   界面、`loggi.conf` 会话持久化、迷你概览条。Rust 互操作走 JNI
   （`crates/engine-jni` cdylib；曾评估 UniFFI，因热缓冲区控制需求而
   放弃——见 `docs/PLAN.md` §2）。

@@ -1,11 +1,13 @@
 package top.z7workbench.loggi.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -26,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpSize
@@ -35,6 +38,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.rememberWindowState
 import top.z7workbench.loggi.i18n.LocalStrings
 import top.z7workbench.loggi.settings.AppSettings
+import top.z7workbench.loggi.settings.ColorScheme
 import top.z7workbench.loggi.settings.LocaleSetting
 import top.z7workbench.loggi.settings.SearchLayout
 import top.z7workbench.loggi.settings.TabPlacement
@@ -80,14 +84,22 @@ fun SettingsWindow(app: AppViewModel, onDismiss: () -> Unit) {
                     ),
                     selected = settings.themeMode,
                 ) { mode -> app.updateSettings { it.copy(themeMode = mode) } }
-                ChipRow(
+                ColorSchemeRow(strings.colorSchemeLabel, settings.colorScheme) { scheme ->
+                    app.updateSettings { it.copy(colorScheme = scheme) }
+                }
+                DropdownRow(
                     label = strings.languageLabel,
+                    current = settings.locale,
+                    // Language names in their own native form (Android convention).
                     options = listOf(
                         LocaleSetting.SYSTEM to strings.languageSystem,
                         LocaleSetting.EN to "English",
-                        LocaleSetting.ZH to "中文",
+                        LocaleSetting.ZH to "简体中文",
+                        LocaleSetting.ZH_HANT to "繁體中文",
+                        LocaleSetting.FR to "Français",
+                        LocaleSetting.DE to "Deutsch",
+                        LocaleSetting.RU to "Русский",
                     ),
-                    selected = settings.locale,
                 ) { loc -> app.updateSettings { it.copy(locale = loc) } }
                 FontFamilyRow(
                     label = strings.uiFontFamilyLabel,
@@ -186,6 +198,44 @@ fun SettingsWindow(app: AppViewModel, onDismiss: () -> Unit) {
     }
 }
 
+/**
+ * Labeled dropdown row (settings rows): a compact button showing the current
+ * value, opening a [CompactDropdownMenu] with the options. Used by the
+ * language and font-family pickers.
+ */
+@Composable
+private fun <T> DropdownRow(
+    label: String,
+    current: T,
+    options: List<Pair<T, String>>,
+    onSelect: (T) -> Unit,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 3.dp)) {
+        Text(
+            label,
+            fontSize = 13.sp,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.width(110.dp),
+        )
+        Box {
+            var open by remember { mutableStateOf(false) }
+            val shown = options.firstOrNull { it.first == current }?.second ?: ""
+            CompactButton(text = "$shown  ▾", onClick = { open = true })
+            CompactDropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+                options.forEach { (value, text) ->
+                    CompactMenuItem(
+                        text = text,
+                        onClick = {
+                            open = false
+                            onSelect(value)
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
 /** Font family picker behind a compact dropdown ([AppSettings.FONT_SYSTEM] shows localized). */
 @Composable
 private fun FontFamilyRow(
@@ -196,29 +246,7 @@ private fun FontFamilyRow(
 ) {
     val strings = LocalStrings.current
     fun display(name: String) = if (name == AppSettings.FONT_SYSTEM) strings.fontSystemDefault else name
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 3.dp)) {
-        Text(
-            label,
-            fontSize = 13.sp,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.width(110.dp),
-        )
-        Box {
-            var open by remember { mutableStateOf(false) }
-            CompactButton(text = "${display(current)}  ▾", onClick = { open = true })
-            CompactDropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-                families.forEach { name ->
-                    CompactMenuItem(
-                        text = display(name),
-                        onClick = {
-                            open = false
-                            onSelect(name)
-                        },
-                    )
-                }
-            }
-        }
-    }
+    DropdownRow(label, current, families.map { it to display(it) }, onSelect)
 }
 
 @Composable
@@ -256,6 +284,78 @@ private fun <T> ChipRow(
                 onClick = { onSelect(value) },
                 modifier = Modifier.padding(end = 4.dp),
             )
+        }
+    }
+}
+
+/**
+ * Color-scheme picker: one swatch per scheme showing its light (top) and dark
+ * (bottom) primary, labelled and selectable. Each scheme ships both variants
+ * (see `theme/Theme.kt`), so the choice is independent of the light/dark mode.
+ */
+@Composable
+private fun ColorSchemeRow(
+    label: String,
+    selected: ColorScheme,
+    onSelect: (ColorScheme) -> Unit,
+) {
+    val strings = LocalStrings.current
+    fun name(scheme: ColorScheme) = when (scheme) {
+        ColorScheme.VIOLET -> strings.colorSchemeViolet
+        ColorScheme.BLUE -> strings.colorSchemeBlue
+        ColorScheme.TEAL -> strings.colorSchemeTeal
+        ColorScheme.GREEN -> strings.colorSchemeGreen
+        ColorScheme.ORANGE -> strings.colorSchemeOrange
+        ColorScheme.AMBER -> strings.colorSchemeAmber
+        ColorScheme.ROSE -> strings.colorSchemeRose
+        ColorScheme.SLATE -> strings.colorSchemeSlate
+        ColorScheme.INDIGO -> strings.colorSchemeIndigo
+    }
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 3.dp)) {
+        Text(
+            label,
+            fontSize = 13.sp,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.width(110.dp),
+        )
+        ColorScheme.entries.forEach { scheme ->
+            val schemeColors = MaterialTheme.colorScheme
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(end = 6.dp),
+            ) {
+                Box(
+                    Modifier
+                        .size(24.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .border(
+                            2.dp,
+                            if (selected == scheme) schemeColors.primary else schemeColors.outline,
+                            RoundedCornerShape(4.dp),
+                        )
+                        .clickable { onSelect(scheme) },
+                ) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .fillMaxHeight(0.5f)
+                            .background(Color(scheme.lightPrimary)),
+                    )
+                    Box(
+                        Modifier
+                            .align(Alignment.BottomStart)
+                            .fillMaxWidth()
+                            .fillMaxHeight(0.5f)
+                            .background(Color(scheme.darkPrimary)),
+                    )
+                }
+                Text(
+                    name(scheme),
+                    fontSize = 9.sp,
+                    maxLines = 1,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
