@@ -19,8 +19,7 @@ crates/bench           criterion benchmarks + soak harness (+ gen-log data gener
 shared/                KMP module (JVM target): all UI, ViewModels, settings/i18n/theme, JNI host
 desktopApp/            app entry (main.kt) + native installer packaging (icons in packaging/)
 packaging/             icon-512.png / icon.icns / icon.ico
-docs/                  PLAN.md, benchmarks.md, perf.md, release.md
-```
+docs/                  PLAN.md, benchmarks.md, perf.md, release.md, audit-*
 
 ## Commands
 
@@ -73,6 +72,22 @@ windows-latest / macos-latest / ubuntu-latest.
   the UI surfaces them without panic paths.
 - Settings: portable file (`loggi.conf` beside the binary) or app-config dir; follow
   `docs/PLAN.md` M8.
+
+## Documentation
+
+- **`README.md` (English) and `README-cn.md` (zh-Hans) must be updated
+  together** whenever the project's reality changes — new commands, new
+  install formats, new CI workflow, new milestone, dropped feature,
+  packaging change, etc. Treat the two READMEs as a single bilingual
+  artifact: never ship a `README.md` edit that is not mirrored in
+  `README-cn.md`, and vice-versa. The link from `README.md` to the Chinese
+  version must stay valid.
+- Internal docs (`docs/PLAN.md`, `docs/benchmarks.md`, `docs/perf.md`,
+  `docs/release.md`, `docs/audit-*`) are the source of truth for design
+  decisions; the READMEs point to them, do not duplicate them.
+- Before claiming a milestone done, re-read both READMEs and confirm every
+  command, file path, and version reference still matches what the code
+  actually does.
 
 ## Testing expectations
 
@@ -155,3 +170,40 @@ Dmg/Msi/Deb/**Rpm** installers, signing, release CI uploading artifacts to
 GitHub Releases), M11 (OS integration: `loggi <file>` CLI entry, "Open with
 Loggi"/"使用 Loggi 打开" right-click verb for any file extension with i18n —
 see `docs/PLAN.md`).
+
+M9 (2026-08-08) closed the memory + perf hardening pass: JNI matcher cache
+now a 64-entry LRU (no unbounded highlighter retention); index bytes/line
+unit-tested at ≤ 8 bytes/line (1.41 measured on the Android bugreport);
+search cache eviction covered by `cycles_dont_grow_cache` and
+`dense_results_not_cached`; `soak` now has an explicit 32 MiB post-warmup
+RSS growth budget. See `docs/perf.md` for the full memory model + gates.
+
+M10 (2026-08-08) closed the packaging + release pipeline: `desktopApp` ships
+Dmg/Pkg/Msi/Exe/Deb/**Rpm** (Rpm is new in M10); macOS signing +
+notarization are best-effort and gated on `MACOS_SIGNING_*` /
+`MACOS_NOTARIZATION_*` env vars; Windows Authenticode signing is applied by
+a post-build signtool step in `release.yml`. The release workflow
+(`.github/workflows/release.yml`) fires on `v*` tag push, on
+`release: published`, or on workflow dispatch (see `docs/release.md` §
+Trigger); it matrix-builds every
+target, runs the perf-gate smoke against a 1 GiB corpus, and uploads
+installers + `SHA256SUMS` to GitHub Releases. See `docs/release.md`.
+
+M11 (2026-08-08) closed the OS file-association pass: `main.kt` accepts
+file paths as positional args (one per tab). The "Open with Loggi" verb
+shows up under right-click for any file extension on every OS:
+- macOS: jpackage's `fileAssociation("*", "public.data", …)` lands in
+  `Info.plist` (`CFBundleDocumentTypes`, `LSItemContentTypes`) — no runtime
+  work.
+- Windows: runtime registration to `HKCU\Software\Classes\*\shell\Loggi`
+  via `os.WindowsFileAssociation` (`reg.exe`); jpackage's MSI verb is
+  HKLM-only (admin required), so per-user HKCU is re-registered on first
+  run and on every locale change so the verb display name follows the UI
+  language.
+- Linux: jpackage writes the system-wide `.desktop` with `MimeType=*`;
+  `os.LinuxFileAssociation` also writes a per-user copy in
+  `XDG_DATA_HOME/applications/loggi-user.desktop` (atomic write, locale-
+  aware) so the verb shows up without root or a relogin.
+Verb display name is localized (`Open with Loggi` / `使用 Loggi 打开`).
+See `shared/.../os/FileAssociation.kt` + JVM tests in
+`shared/src/jvmTest/.../os/FileAssociationTest.kt`.

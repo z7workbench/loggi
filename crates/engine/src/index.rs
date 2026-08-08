@@ -735,4 +735,26 @@ mod tests {
         flag.set();
         assert!(matches!(index_file(&p, &opts), Err(IndexError::Cancelled)));
     }
+
+    /// M9 memory budget: index bytes/line must stay below 8 bytes/line on a
+    /// realistic corpus. 1.41 bytes/line is the M4 baseline on the Android
+    /// bugreport; the 8-byte ceiling gives 5× headroom and is the value
+    /// documented in `docs/perf.md` and `docs/PLAN.md` M9.
+    #[test]
+    fn bytes_per_line_within_budget() {
+        // 100k fixed-width lines; deltas are tiny so the varint packing is
+        // exercised at its best case. A regression here is a packing
+        // regression in `Scanner::push_end` / `write_varint`.
+        let mut bytes = Vec::with_capacity(100_000 * 16);
+        for i in 0..100_000u64 {
+            bytes.extend_from_slice(format!("line {i:08}\n").as_bytes());
+        }
+        let p = write_file("mem.log", &bytes);
+        let idx = index_file(&p, &IndexOptions::default()).unwrap();
+        let bpl = idx.index_bytes() as f64 / idx.line_count() as f64;
+        assert!(
+            bpl < 8.0,
+            "index bytes/line {bpl:.2} exceeds the 8-byte budget (perf.md §Memory model)"
+        );
+    }
 }

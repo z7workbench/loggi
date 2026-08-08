@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+env:
+  CARGO_TERM_COLOR: always
+  GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx3g
+
 jobs:
   rust:
     name: Rust (${{ matrix.os }})
@@ -18,6 +22,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
+      - name: Cache cargo registry + target
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "crates/engine crates/engine-jni -> target"
       - name: Format
         run: cargo fmt --check
       - name: Clippy
@@ -38,6 +46,13 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Cache cargo registry + target
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "crates/engine crates/engine-jni -> target"
+      - name: Cache Gradle
+        uses: gradle/actions/setup-gradle@v3
       - name: Compose desktop compile
         run: ./gradlew compileKotlinJvm compileTestKotlinJvm compileKotlin --console=plain
 
@@ -55,6 +70,15 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
+      - name: Cache cargo registry + target
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "crates/engine crates/engine-jni -> target"
+      - name: Cache Gradle
+        uses: gradle/actions/setup-gradle@v3
+      # M11: the OS-specific FileAssociation helpers (Windows verb,
+      # Linux .desktop) are exercised as part of the JVM bridge tests so a
+      # broken platform-specific path fails the build.
       - name: JVM tests (builds the JNI cdylib via cargo)
         run: ./gradlew :shared:jvmTest --console=plain
 
@@ -64,5 +88,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - name: Cache cargo registry + target
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "crates/bench -> target"
       - name: Perf gate
         run: cargo run --release -p loggi-bench --bin perf-gate

@@ -1,0 +1,247 @@
+name: Release
+
+on:
+  # Build a new release whenever the user opts in via any of:
+  #   1. pushing a `v*` tag (the legacy / CI-friendly path);
+  #   2. publishing a GitHub Release — `releases > New release > Publish`;
+  #   3. running the workflow manually from the Actions tab.
+  # All three paths feed the same matrix, so a release built from a tag or a
+  # GitHub Release ends up with identical installers + SHA256SUMS.
+  push:
+    tags:
+      - "v*"
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g. v0.2.0). Leave blank to use the latest tag in the repo."
+        required: false
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx3g
+
+jobs:
+  # Verify the resolved tag is consistent with the Cargo workspace version,
+  # and that the workspace builds green. This is the cheap fast-fail before
+  # the expensive matrix runs.
+  verify:
+    name: Verify tag matches workspace version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Resolve tag
+        id: tag
+        run: |
+          # Three entry points:
+          #   push tag             → github.ref_name
+          #   release published    → github.event.release.tag_name
+          #   workflow_dispatch    → inputs.tag (or the latest tag if blank)
+          case "${{ github.event_name }}" in
+            push)
+              echo "name=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+              ;;
+            release)
+              echo "name=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+              ;;
+            workflow_dispatch)
+              if [ -n "${{ inputs.tag }}" ]; then
+                echo "name=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+              else
+                echo "name=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
+              fi
+              ;;
+          esac
+      - name: Extract Cargo workspace version
+        id: ver
+        run: |
+          VER=$(grep -E '^version\s*=\s*"[^"]+"' Cargo.toml | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "cargo=$VER" >> "$GITHUB_OUTPUT"
+      - name: Verify tag matches
+        run: |
+          TAG="${{ steps.tag.outputs.name }}"
+          CARGO="${{ steps.ver.outputs.cargo }}"
+          if [ "${TAG#v}" != "${CARGO}" ]; then
+            echo "::error::Tag ${TAG} does not match Cargo workspace version ${CARGO}"
+            exit 1
+          fi
+      - name: Lint
+        run: cargo fmt --check && cargo clippy --workspace --all-targets -- -D warnings
+      - name: Test
+        run: cargo test --workspace
+
+  matrix:
+    name: Build (${{ matrix.os }} → ${{ matrix.format }})
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            format: dmg
+            artifact: Loggi-${{ needs.verify.outputs.cargo }}-macos-x64.dmg
+          - os: macos-latest
+            format: pkg
+            artifact: Loggi-${{ needs.verify.outputs.cargo }}-macos-x64.pkg
+          - os: windows-latest
+            format: msi
+            artifact: Loggi-${{ needs.verify.outputs.cargo }}-windows-x64.msi
+          - os: ubuntu-latest
+            format: deb
+            artifact: Loggi-${{ needs.verify.outputs.cargo }}-linux-x64.deb
+          - os: ubuntu-latest
+            format: rpm
+            artifact: Loggi-${{ needs.verify.outputs.cargo }}-linux-x64.rpm
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Cache cargo registry + target
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "crates/engine crates/engine-jni -> target"
+      - name: Cache Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-read-only: ${{ github.ref != 'refs/tags/v*' }}
+      - name: Print version
+        run: ./gradlew :desktopApp:printVersion --console=plain -q
+      - name: Build ${{ matrix.format }}
+        run: >
+          ./gradlew
+          :desktopApp:package${{ matrix.format }}
+          -Ploggi.jni.profile=release
+          -Ploggi.version=${{ needs.verify.outputs.cargo }}
+          --console=plain
+      - name: Locate installer
+        id: locate
+        shell: bash
+        run: |
+          set -e
+          ROOT="desktopApp/build/compose/binaries/main"
+          find "$ROOT" -type f \( -name "*${{ matrix.format }}" -o -name "*.exe" -o -name "*.dmg" -o -name "*.pkg" -o -name "*.deb" -o -name "*.rpm" -o -name "*.msi" \) -printf "%p %s\n" | sort -k2 -n -r | head -1 | tee /tmp/largest.txt
+          ART=$(awk '{print $1}' /tmp/largest.txt)
+          echo "artifact=$ART" >> "$GITHUB_OUTPUT"
+      - name: Rename to release filename
+        shell: bash
+        run: |
+          set -e
+          SRC="${{ steps.locate.outputs.artifact }}"
+          DST="${{ github.workspace }}/${{ matrix.artifact }}"
+          cp "$SRC" "$DST"
+          echo "Built $DST ($(stat -c '%s' "$DST" 2>/dev/null || stat -f '%z' "$DST") bytes)"
+      - name: SHA256 of the installer
+        shell: bash
+        run: |
+          (cd "${{ github.workspace }}" && sha256sum "${{ matrix.artifact }}") | tee -a "${{ github.workspace }}/sha256sums.txt"
+        if: runner.os != 'Windows'
+      - name: SHA256 of the installer (Windows)
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash -Algorithm SHA256 -Path "${{ matrix.artifact }}").Hash.ToLower()
+          "$hash  ${{ matrix.artifact }}" | Out-File -Encoding utf8 -Append "${{ github.workspace }}\sha256sums.txt"
+        if: runner.os == 'Windows'
+      - name: Smoke (open 1 GiB log, search, close)
+        shell: bash
+        run: |
+          set -e
+          cargo run --release -p loggi-bench --bin gen-log -- 1g repeat /tmp/loggi-smoke-1g.log
+          cargo run --release -p loggi-bench --bin perf-gate -- /tmp/loggi-smoke-1g.log
+        if: runner.os != 'Windows'
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload SHA256SUMS partial
+        uses: actions/upload-artifact@v4
+        with:
+          name: sha256sums-partial-${{ matrix.os }}
+          path: sha256sums.txt
+          retention-days: 14
+
+  # Single release job: collect all installer artifacts + the SHA256SUMS
+  # partials, assemble the final release body, and attach everything to the
+  # GitHub Release. Uses the official softprops action so the assets show up
+  # on the Release page.
+  release:
+    name: Publish GitHub Release
+    needs: [verify, matrix]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+      - name: Assemble SHA256SUMS
+        run: |
+          if ls release-assets/sha256sums-partial-* 1> /dev/null 2>&1; then
+            cat release-assets/sha256sums-partial-* > release-assets/SHA256SUMS
+            rm release-assets/sha256sums-partial-*
+            echo "--- release-assets/SHA256SUMS ---"
+            cat release-assets/SHA256SUMS
+          fi
+      - name: Build release notes (auto-generated from merged PRs)
+        if: github.event_name != 'release'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const ver = '${{ needs.verify.outputs.cargo }}';
+            let notes = `## loggi ${ver}\n\n`;
+            try {
+              const prs = await github.paginate(gitHub.rest.pulls.list, {
+                owner: context.repo.owner, repo: context.repo.repo,
+                state: 'closed', base: 'main', per_page: 50, sort: 'updated', direction: 'desc',
+              });
+              const merged = prs.filter(p => p.merged_at && p.merge_commit_sha);
+              if (merged.length) {
+                notes += '### Changes\n';
+                for (const p of merged) notes += `- ${p.title} (#${p.number})\n`;
+              }
+            } catch (e) {
+              notes += '\n_(PR list unavailable: ' + e.message + ')_\n';
+            }
+            notes += '\n### Installers\n';
+            notes += '- macOS: `*.dmg` / `*.pkg`\n';
+            notes += '- Windows: `*.msi` (per-user install)\n';
+            notes += '- Linux: `*.deb` (Ubuntu/Debian), `*.rpm` (RHEL/Fedora/SUSE)\n';
+            notes += '\nVerify with `SHA256SUMS`.\n';
+            await fs.writeFile('RELEASE_BODY.md', notes);
+      - name: Create / update release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.verify.outputs.tag }}
+          name: "loggi ${{ needs.verify.outputs.cargo }}"
+          # Preserve the body the user wrote in the GitHub Release UI when
+          # the trigger was `release: published`; only auto-generate one for
+          # the tag-push / dispatch path where no release body exists yet.
+          body_path: ${{ github.event_name != 'release' && 'RELEASE_BODY.md' || '' }}
+          fail_on_unmatched_files: true
+          files: |
+            release-assets/*.dmg
+            release-assets/*.pkg
+            release-assets/*.msi
+            release-assets/*.deb
+            release-assets/*.rpm
+            release-assets/SHA256SUMS
+          draft: false
+          prerelease: ${{ contains(needs.verify.outputs.cargo, '-') }}

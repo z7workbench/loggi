@@ -18,6 +18,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -80,16 +81,28 @@ fun FrameWindowScope.App(app: AppViewModel, onExit: () -> Unit) {
     ) {
         LoggiTheme(app.settings.themeMode, rememberUiFontFamily(app.settings.uiFontFamily)) {
             AppMenuBar(app, onExit)
-            Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-                Toolbar(app)
-                Row(Modifier.weight(1f)) {
-                    if (app.settings.tabPlacement == TabPlacement.VERTICAL) TabBar(app)
-                    Column(Modifier.weight(1f)) {
-                        if (app.settings.tabPlacement == TabPlacement.HORIZONTAL) TabBar(app)
-                        Box(Modifier.weight(1f)) { ActiveTabContent(app) }
+            // The top-level Surface sets `LocalContentColor` from the themed
+            // background (via M3's contrast algorithm), so any `Text` deeper
+            // in the tree that doesn't pass an explicit `color = …` inherits
+            // the readable foreground instead of falling back to Color.Black
+            // (which is what made the log view's main line text invisible in
+            // dark mode).
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.background,
+                contentColor = MaterialTheme.colorScheme.onBackground,
+            ) {
+                Column(Modifier.fillMaxSize()) {
+                    Toolbar(app)
+                    Row(Modifier.weight(1f)) {
+                        if (app.settings.tabPlacement == TabPlacement.VERTICAL) TabBar(app)
+                        Column(Modifier.weight(1f)) {
+                            if (app.settings.tabPlacement == TabPlacement.HORIZONTAL) TabBar(app)
+                            Box(Modifier.weight(1f)) { ActiveTabContent(app) }
+                        }
                     }
+                    StatusBar(app)
                 }
-                StatusBar(app)
             }
             AppDialogs(app)
             DetachedSearchWindow(app)
@@ -228,7 +241,11 @@ private fun ActiveTabContent(app: AppViewModel) {
 
         is TabState.Indexing -> Centered {
             CircularProgressIndicator()
-            Text(strings.openingFile(tab.fileName), Modifier.padding(top = 12.dp))
+            Text(
+                strings.openingFile(tab.fileName),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(top = 12.dp),
+            )
             Text(
                 strings.indexingProgress(st.done, st.total),
                 fontSize = 12.sp,

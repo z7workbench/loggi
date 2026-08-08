@@ -56,7 +56,7 @@ struct HandleInner {
 enum OpenState {
     /// Initial indexing runs on its own native thread; progress is polled.
     Indexing(Arc<IndexProgress>),
-    Ready(ReadyState),
+    Ready(Box<ReadyState>),
     Failed(String),
 }
 
@@ -72,8 +72,10 @@ struct ReadyState {
     /// Searches clone the `Arc`; a rebuild swaps the slot without disturbing
     /// a running search (it holds its own Arc).
     engine: Mutex<EngineSlot>,
-    /// Cached highlight matchers, keyed by (pattern, ignore_case, use_regex).
-    matchers: Mutex<HashMap<(String, bool, bool), Arc<HighlightMatcher>>>,
+    /// Cached highlight matchers, bounded LRU keyed by (pattern, ignore_case,
+    /// use_regex). Cap = [MATCHER_CACHE_CAP] so a long session that touches
+    /// many distinct patterns cannot grow without bound (M9 memory audit).
+    matchers: Mutex<LruMap<MatcherKey, Arc<HighlightMatcher>>>,
     /// In-flight searches by search id.
     searches: Mutex<HashMap<u64, SearchSession>>,
 }
@@ -142,6 +144,69 @@ fn search_opts(pattern: &str, ignore_case: bool, use_regex: bool) -> SearchOptio
     }
 }
 
+/// Bounded LRU keyed by (pattern, ignore_case, use_regex). Caps the highlighter
+/// matcher cache at [MATCHER_CACHE_CAP] entries so a session that touches
+/// many distinct patterns (M9 memory audit) cannot grow without bound.
+const MATCHER_CACHE_CAP: usize = 64;
+
+type MatcherKey = (String, bool, bool);
+
+/// Insertion-ordered LRU map backed by `HashMap<K, V>` + `VecDeque<K>` order
+/// list. `HashMap`'s iteration order is unspecified, so we keep the order in
+/// an explicit deque: a touch (`get_mut`) moves the key to the back; an
+/// insert pushes a new key to the back; an eviction pops the front. The
+/// `VecDeque::position` + `remove` are O(n) per touch, but with the
+/// 64-entry cap the constant is small.
+struct LruMap<K, V> {
+    map: HashMap<K, V>,
+    order: std::collections::VecDeque<K>,
+    cap: usize,
+}
+
+impl<K: std::hash::Hash + Eq + Clone, V> LruMap<K, V> {
+    fn with_cap(cap: usize) -> Self {
+        LruMap {
+            map: HashMap::with_capacity(cap),
+            order: std::collections::VecDeque::with_capacity(cap),
+            cap,
+        }
+    }
+
+    fn get_mut(&mut self, k: &K) -> Option<&mut V> {
+        if !self.map.contains_key(k) {
+            return None;
+        }
+        // Move the key to the back of the order list (most recently used).
+        if let Some(pos) = self.order.iter().position(|x| x == k) {
+            let kk = self.order.remove(pos).expect("present in order");
+            self.order.push_back(kk);
+        }
+        self.map.get_mut(k)
+    }
+
+    fn insert(&mut self, k: K, v: V) -> Option<V> {
+        // If the key already exists, drop the old order entry and value.
+        if let Some(pos) = self.order.iter().position(|x| x == &k) {
+            self.order.remove(pos);
+        }
+        let prev = self.map.insert(k.clone(), v);
+        self.order.push_back(k);
+        while self.map.len() > self.cap {
+            if let Some(eldest) = self.order.pop_front() {
+                self.map.remove(&eldest);
+            } else {
+                break;
+            }
+        }
+        prev
+    }
+
+    #[cfg(test)]
+    fn len(&self) -> usize {
+        self.map.len()
+    }
+}
+
 /// Snapshot of a ready handle's index (None while indexing/failed).
 fn ready_index(inner: &HandleInner) -> Option<Arc<FileIndex>> {
     let st = inner.state.lock().unwrap();
@@ -203,15 +268,15 @@ pub extern "system" fn Java_top_z7workbench_loggi_jni_LoggiBridge_openFile<'loca
                 Ok(shared) => {
                     let generation = shared.generation();
                     let engine = SearchEngine::new(shared.snapshot());
-                    *st = OpenState::Ready(ReadyState {
+                    *st = OpenState::Ready(Box::new(ReadyState {
                         shared,
                         engine: Mutex::new(EngineSlot {
                             engine: Arc::new(engine),
                             generation,
                         }),
-                        matchers: Mutex::new(HashMap::new()),
+                        matchers: Mutex::new(LruMap::with_cap(MATCHER_CACHE_CAP)),
                         searches: Mutex::new(HashMap::new()),
-                    });
+                    }));
                 }
                 Err(e) => {
                     *st = OpenState::Failed(e.to_string());
@@ -714,7 +779,7 @@ pub unsafe extern "system" fn Java_top_z7workbench_loggi_jni_LoggiBridge_matchIn
         };
         let matcher = {
             let mut cache = r.matchers.lock().unwrap();
-            if let Some(m) = cache.get(&key) {
+            if let Some(m) = cache.get_mut(&key) {
                 m.clone()
             } else {
                 let opts = search_opts(&pattern, ignore_case != 0, use_regex != 0);
@@ -751,5 +816,47 @@ pub unsafe extern "system" fn Java_top_z7workbench_loggi_jni_LoggiBridge_matchIn
 mod env {
     pub const fn version() -> &'static str {
         concat!(env!("CARGO_PKG_NAME"), " ", env!("CARGO_PKG_VERSION"))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// M9: the LruMap must cap at the configured size, evict the eldest
+    /// (least-recently-used) entry on overflow, and refresh the order on
+    /// every touch. Catches off-by-one eviction and the "HashMap iteration
+    /// order is unspecified" trap.
+    #[test]
+    fn lru_map_caps_and_touches() {
+        let mut m: LruMap<&'static str, u32> = LruMap::with_cap(3);
+        m.insert("a", 1);
+        m.insert("b", 2);
+        m.insert("c", 3);
+        assert_eq!(m.len(), 3);
+        // Touch `a` so it moves to the back; `b` is now the eldest.
+        assert_eq!(*m.get_mut(&"a").unwrap(), 1);
+        // Insert a 4th — must evict `b`, not `a`.
+        m.insert("d", 4);
+        assert_eq!(m.len(), 3);
+        assert!(m.get_mut(&"a").is_some(), "touched entry got evicted");
+        assert!(m.get_mut(&"b").is_none(), "eldest was not evicted");
+        assert!(m.get_mut(&"c").is_some());
+        assert!(m.get_mut(&"d").is_some());
+    }
+
+    /// M9: a re-insert of the same key updates the value without growing
+    /// the map and refreshes the recency.
+    #[test]
+    fn lru_map_reinsert_refreshes() {
+        let mut m: LruMap<i32, i32> = LruMap::with_cap(2);
+        m.insert(1, 10);
+        m.insert(2, 20);
+        m.insert(1, 11); // re-insert
+        assert_eq!(m.len(), 2);
+        assert_eq!(*m.get_mut(&1).unwrap(), 11);
+        m.insert(3, 30); // would evict the eldest (now 2)
+        assert!(m.get_mut(&1).is_some());
+        assert!(m.get_mut(&2).is_none());
     }
 }

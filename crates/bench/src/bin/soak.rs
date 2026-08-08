@@ -1,7 +1,13 @@
 //! Soak harness: open → info → search → read → close cycles with RSS
 //! sampling. Flat RSS is the pass criterion (no leaks / unbounded caches).
 //!
-//! Usage: `soak <file> [cycles]`
+//! Usage: `soak <file> [cycles] [max-growth-MiB]`
+//!
+//! The default growth budget is 32 MiB over 200 cycles. Set the third arg to
+//! tighten or relax; the soak exits non-zero when the post-warmup RSS growth
+//! exceeds the budget. The first 10 cycles are the warmup window and are
+//! excluded from the budget so a per-thread malloc-zone ramp does not fail
+//! the gate.
 
 use std::time::{Duration, Instant};
 
@@ -17,11 +23,17 @@ fn rss_bytes() -> u64 {
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    let path = args.get(1).expect("usage: soak <file> [cycles]");
-    let cycles: usize = args.get(2).map(|s| s.parse().unwrap()).unwrap_or(50);
+    let path = args
+        .get(1)
+        .expect("usage: soak <file> [cycles] [max-growth-MiB]");
+    let cycles: usize = args.get(2).map(|s| s.parse().unwrap()).unwrap_or(200);
+    let max_growth_mib: f64 = args.get(3).map(|s| s.parse().unwrap()).unwrap_or(32.0);
     let t0 = Instant::now();
-    let mut last_rss = rss_bytes();
-    eprintln!("soak: {} cycles on {}", cycles, path);
+    let mut rss_samples: Vec<u64> = Vec::new();
+    eprintln!(
+        "soak: {} cycles on {} (max growth {:.0} MiB after warmup)",
+        cycles, path, max_growth_mib
+    );
 
     for c in 0..cycles {
         let shared = SharedIndex::open(path, &IndexOptions::default()).unwrap();
@@ -53,23 +65,34 @@ fn main() {
         drop(results);
         drop(engine);
         drop(shared);
+        let rss = rss_bytes();
+        rss_samples.push(rss);
         if c % 10 == 0 || c == cycles - 1 {
-            let rss = rss_bytes();
             eprintln!(
-                "cycle {c:>3}: rss = {:.1} MiB (delta {:+8.1} MiB)",
-                rss as f64 / (1 << 20) as f64,
-                (rss as f64 - last_rss as f64) / (1 << 20) as f64
+                "cycle {c:>3}: rss = {:6.1} MiB",
+                rss as f64 / (1 << 20) as f64
             );
-            last_rss = rss;
         }
         std::thread::sleep(Duration::from_millis(10));
     }
     let final_rss = rss_bytes();
+    let warmup = (cycles / 20).max(5);
+    let post_warm = rss_samples.get(warmup).copied().unwrap_or(0);
+    let growth_mib = (final_rss as f64 - post_warm as f64) / (1 << 20) as f64;
     eprintln!(
-        "soak done in {:.1}s: rss {:.1} MiB -> {:.1} MiB (growth {:.1} MiB)",
+        "soak done in {:.1}s: warmup rss {:6.1} MiB -> final {:6.1} MiB (growth {:+6.1} MiB over last {} cycles)",
         t0.elapsed().as_secs_f64(),
-        rss_bytes() as f64 / (1 << 20) as f64,
+        post_warm as f64 / (1 << 20) as f64,
         final_rss as f64 / (1 << 20) as f64,
-        (final_rss as f64 - last_rss as f64) / (1 << 20) as f64
+        growth_mib,
+        cycles - warmup,
     );
+    if growth_mib > max_growth_mib {
+        eprintln!(
+            "FAIL: RSS growth {:.1} MiB exceeds budget {:.1} MiB",
+            growth_mib, max_growth_mib
+        );
+        std::process::exit(1);
+    }
+    eprintln!("soak: PASS");
 }

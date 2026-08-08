@@ -366,6 +366,11 @@ private fun LogLineItem(vm: FileViewModel, line: Long, metrics: LogMetrics) {
                     fontFamily = metrics.fontFamily,
                     fontSize = metrics.fontSizeSp.sp,
                     lineHeight = metrics.lineHeightSp.sp,
+                    // Explicit foreground so the row stays readable regardless
+                    // of which Surface (if any) wraps the log view. M3
+                    // defaults this to LocalContentColor, which falls back
+                    // to Color.Black outside a Surface (M9 dark-mode fix).
+                    color = MaterialTheme.colorScheme.onSurface,
                     // Override the M3 default letter spacing (0.5 sp): the
                     // column grid assumes a fixed per-char advance, so the
                     // rendered text must not add spacing between glyphs.

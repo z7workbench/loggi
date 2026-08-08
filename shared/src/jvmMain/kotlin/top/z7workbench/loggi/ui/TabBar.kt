@@ -147,6 +147,8 @@ private fun TabChip(app: AppViewModel, tab: FileTab, index: Int, vertical: Boole
                 Text(
                     text = tab.title,
                     fontSize = 12.sp,
+                    color = if (selected) MaterialTheme.colorScheme.onSecondaryContainer
+                    else MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false),

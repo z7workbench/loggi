@@ -92,6 +92,9 @@ abstract class Strings {
     abstract fun aboutText(engineVersion: String): String
     abstract val customColorTitle: String
 
+    // OS integration (M11) — "Open with Loggi" shell verb / Open With menu
+    abstract val openWithLoggi: String
+
     // Settings dialog
     abstract val settingsTitle: String
     abstract val sectionAppearance: String
@@ -218,6 +221,7 @@ class EnStrings : Strings() {
     override fun aboutText(engineVersion: String) =
         "Loggi — a log viewer for very large files.\nEngine: $engineVersion"
     override val customColorTitle = "Custom Color"
+    override val openWithLoggi = "Open with Loggi"
 
     override val settingsTitle = "Settings"
     override val sectionAppearance = "Appearance"
@@ -344,6 +348,7 @@ class ZhStrings : Strings() {
     override fun aboutText(engineVersion: String) =
         "Loggi —— 面向超大文件的日志查看器。\n引擎：$engineVersion"
     override val customColorTitle = "自定义颜色"
+    override val openWithLoggi = "使用 Loggi 打开"
 
     override val settingsTitle = "设置"
     override val sectionAppearance = "外观"

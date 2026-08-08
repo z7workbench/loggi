@@ -18,8 +18,10 @@ import top.z7workbench.loggi.engine.OpenCancelledException
 import top.z7workbench.loggi.i18n.Strings
 import top.z7workbench.loggi.i18n.resolveLocale
 import top.z7workbench.loggi.i18n.stringsFor
+import top.z7workbench.loggi.os.FileAssociation
 import top.z7workbench.loggi.settings.AppSettings
 import top.z7workbench.loggi.settings.HighlighterRule
+import top.z7workbench.loggi.settings.LocaleSetting
 import top.z7workbench.loggi.settings.SettingsStore
 import top.z7workbench.loggi.settings.TabSession
 
@@ -93,6 +95,10 @@ class AppViewModel(
         searchHistory.addAll(settings.searchHistory)
         restoreSession()
         watchPersistence()
+        // M11: best-effort OS-level "Open with Loggi" verb, registered in the
+        // active UI locale. Failures are swallowed — the verb is a convenience,
+        // not a launch dependency.
+        FileAssociation.ensure(strings.openWithLoggi)
     }
 
     // ---- tabs ---------------------------------------------------------------
@@ -159,7 +165,14 @@ class AppViewModel(
     // ---- settings / highlighters ---------------------------------------------
 
     fun updateSettings(transform: (AppSettings) -> AppSettings) {
-        settings = transform(settings)
+        val prev = settings
+        val next = transform(prev)
+        settings = next
+        // M11: re-register the OS verb when the locale changes so the menu
+        // item shows the right language without waiting for the next launch.
+        if (next.locale != prev.locale) {
+            FileAssociation.ensure(stringsFor(resolveLocale(next.locale)).openWithLoggi)
+        }
     }
 
     fun addHighlighter(rule: HighlighterRule) = addHighlighters(listOf(rule))

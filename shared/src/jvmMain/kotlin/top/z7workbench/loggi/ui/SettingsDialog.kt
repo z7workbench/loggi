@@ -197,7 +197,12 @@ private fun FontFamilyRow(
     val strings = LocalStrings.current
     fun display(name: String) = if (name == AppSettings.FONT_SYSTEM) strings.fontSystemDefault else name
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 3.dp)) {
-        Text(label, fontSize = 13.sp, modifier = Modifier.width(110.dp))
+        Text(
+            label,
+            fontSize = 13.sp,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.width(110.dp),
+        )
         Box {
             var open by remember { mutableStateOf(false) }
             CompactButton(text = "${display(current)}  ▾", onClick = { open = true })
@@ -223,6 +228,7 @@ private fun Section(title: String) {
             title,
             fontWeight = FontWeight.Bold,
             fontSize = 13.sp,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(top = 10.dp, bottom = 2.dp),
         )
         HorizontalDivider()
@@ -237,7 +243,12 @@ private fun <T> ChipRow(
     onSelect: (T) -> Unit,
 ) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 3.dp)) {
-        Text(label, fontSize = 13.sp, modifier = Modifier.width(110.dp))
+        Text(
+            label,
+            fontSize = 13.sp,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.width(110.dp),
+        )
         options.forEach { (value, text) ->
             CompactButton(
                 text = text,
@@ -260,7 +271,12 @@ private fun SpinnerRow(
     onValue: (Float) -> Unit,
 ) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 3.dp)) {
-        Text(label, fontSize = 13.sp, modifier = Modifier.width(110.dp))
+        Text(
+            label,
+            fontSize = 13.sp,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.width(110.dp),
+        )
         CompactNumberSpinner(value, onValue, range, step, decimals)
         if (suffix.isNotEmpty()) {
             Text(
@@ -276,7 +292,12 @@ private fun SpinnerRow(
 @Composable
 private fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 3.dp)) {
-        Text(label, fontSize = 13.sp, modifier = Modifier.weight(1f))
+        Text(
+            label,
+            fontSize = 13.sp,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
         Switch(checked = checked, onCheckedChange = onChange)
     }
 }
@@ -284,7 +305,12 @@ private fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Un
 @Composable
 private fun ColorRow(label: String, argb: Long, onPick: (Long) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 3.dp)) {
-        Text(label, fontSize = 13.sp, modifier = Modifier.width(180.dp))
+        Text(
+            label,
+            fontSize = 13.sp,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.width(180.dp),
+        )
         ColorSwatch(argb, onPick)
     }
 }

@@ -967,4 +967,41 @@ mod tests {
         let pos = e.match_positions(&opts, b"ab ab").unwrap();
         assert_eq!(pos, vec![(0, 2), (3, 5)]);
     }
+
+    /// M9 memory audit: run repeated open → search → close cycles on the same
+    /// file and assert that the engine's search results cache stays within
+    /// the configured cap (no monotonic growth across cycles). Combined with
+    /// the `soak` binary's RSS gate, this catches caches that grow without
+    /// bound when a file is opened many times in one process.
+    #[test]
+    fn cycles_dont_grow_cache() {
+        let e = engine_for(&corpus());
+        let mut opts = SearchOptions::new("line 0004");
+        opts.use_regex = false;
+        for _ in 0..50 {
+            let _ = matches_of(&e, &opts);
+            let _ = matches_of(&e, &opts);
+        }
+        // After 100 identical searches the cache should hold exactly one
+        // entry (cap_lines = 1_000, sparse results = 10 lines).
+        let cache = e.cache.lock().unwrap();
+        assert_eq!(cache.map.len(), 1, "cache grew across cycles");
+        assert_eq!(cache.total, 10);
+    }
+
+    /// M9: dense-result cap. The search cache refuses to store results that
+    /// would exceed the cap (M9 + M4); running many dense searches must not
+    /// grow the cache.
+    #[test]
+    fn dense_results_not_cached() {
+        let e = engine_for(&corpus());
+        let mut opts = SearchOptions::new("error"); // 10_000 matches > cap of 1_000
+        opts.use_regex = false;
+        for _ in 0..20 {
+            let _ = matches_of(&e, &opts);
+        }
+        let cache = e.cache.lock().unwrap();
+        assert_eq!(cache.map.len(), 0, "dense results leaked into the cache");
+        assert_eq!(cache.total, 0);
+    }
 }

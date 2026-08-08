@@ -10,16 +10,41 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import top.z7workbench.loggi.vm.AppViewModel
+import java.io.File
 
-fun main() {
+/**
+ * Parse command-line arguments into absolute file paths. The first positional
+ * arg is the file to open (M11 "Open with Loggi" entry point); remaining
+ * positional args open additional tabs.
+ *
+ * Only the path is consumed here — every other flag the launcher might pass
+ * (`-psn_0_…` on macOS, `--enable-preview`, etc.) is ignored so packaged
+ * launches stay robust.
+ */
+private fun parseInitialFiles(args: Array<String>): List<String> = args
+    .asSequence()
+    .filter { !it.startsWith("-") }
+    .map { File(it).absolutePath }
+    .filter { it.isNotBlank() }
+    .toList()
+
+fun main(args: Array<String>) {
     // Compose Desktop reads the macOS top-of-screen menu-bar app name from the
     // `app.name` system property, which defaults to the mainClass suffix
     // (e.g. "MainKt"). Set it explicitly so the menu shows "Loggi" while
     // running via `./gradlew :desktopApp:run` (packaged DMGs read CFBundleName
     // from Info.plist, so this is a no-op there).
     System.setProperty("app.name", "Loggi")
+
+    // M11: command-line file entry. Each positional arg opens one tab. Every
+    // flag the launcher might pass (`-psn_0_…` on macOS, `--enable-preview`,
+    // JVM args consumed before us, etc.) is ignored so packaged launches stay
+    // robust.
+    val initialFiles = parseInitialFiles(args)
+
     application {
         val app = remember { AppViewModel() }
+        initialFiles.forEach(app::openFile)
 
         fun shutdown() {
             app.shutdown()
