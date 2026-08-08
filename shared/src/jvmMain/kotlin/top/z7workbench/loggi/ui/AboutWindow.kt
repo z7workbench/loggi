@@ -34,6 +34,9 @@ import top.z7workbench.loggi.i18n.LocalStrings
 
 private const val LOGGI_HOMEPAGE = "https://github.com/z7workbench/loggi"
 
+/** Release codename — see AGENTS.md: `vX.Y - <adjective> <plant>`, letter = major (1 → A). */
+private const val LOGGI_CODENAME = "Ancient Agave"
+
 /** Trim trailing ".0" components of a version ("1.0.0" → "1.0"). */
 private fun displayVersion(v: String): String {
     val parts = v.split('.')
@@ -86,6 +89,11 @@ fun AboutWindow(onDismiss: () -> Unit) {
                         )
                         Text(
                             "${strings.aboutVersionLabel} $appVersion",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            LOGGI_CODENAME,
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

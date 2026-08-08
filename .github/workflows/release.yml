@@ -315,32 +315,24 @@ jobs:
             echo "--- release-assets/SHA256SUMS ---"
             cat release-assets/SHA256SUMS
           fi
-      - name: Build release notes (auto-generated from merged PRs)
-        uses: actions/github-script@v9
-        with:
-          script: |
-            const fs = require('fs');
-            const ver = '${{ needs.verify.outputs.version }}';
-            let notes = `## loggi ${ver}\n\n`;
-            try {
-              const prs = await github.paginate(github.rest.pulls.list, {
-                owner: context.repo.owner, repo: context.repo.repo,
-                state: 'closed', base: 'main', per_page: 50, sort: 'updated', direction: 'desc',
-              });
-              const merged = prs.filter(p => p.merged_at && p.merge_commit_sha);
-              if (merged.length) {
-                notes += '### Changes\n';
-                for (const p of merged) notes += `- ${p.title} (#${p.number})\n`;
-              }
-            } catch (e) {
-              notes += '\n_(PR list unavailable: ' + e.message + ')_\n';
-            }
-            notes += '\n### Installers\n';
-            notes += '- macOS: `*.dmg` / `*.pkg` (x64, arm64, universal)\n';
-            notes += '- Windows: `*.exe` (NSIS)\n';
-            notes += '- Linux: `*.deb` (Ubuntu/Debian), `*.rpm` (RHEL/Fedora/SUSE)\n';
-            notes += '\nVerify with `SHA256SUMS`.\n';
-            await fs.promises.writeFile('RELEASE_BODY.md', notes);
+      - name: Build release notes from CHANGELOG.md
+        run: |
+          set -e
+          VERSION="${{ needs.verify.outputs.version }}"
+          # Copy the `# vX.Y - <codename>` section of CHANGELOG.md (up to the
+          # next level-1 header) into RELEASE_BODY.md; fail if the version
+          # has no section so a stale changelog can never ship silently.
+          awk -v ver="$VERSION" '
+            function esc(v, r) { r = v; gsub(/\./, "[.]", r); return r }
+            /^# v/ { if ($0 ~ "^# v" esc(ver) "([ -]|$)") { found = 1 } else if (found) exit }
+            found { print }
+          ' CHANGELOG.md > RELEASE_BODY.md
+          if [ ! -s RELEASE_BODY.md ]; then
+            echo "CHANGELOG.md has no section for v$VERSION" >&2
+            exit 1
+          fi
+          echo "--- RELEASE_BODY.md ---"
+          cat RELEASE_BODY.md
       - name: Create / update release
         uses: softprops/action-gh-release@v3
         with:

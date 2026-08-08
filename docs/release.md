@@ -7,11 +7,11 @@ published to GitHub Releases. The mechanical steps live in
 ## TL;DR
 
 ```bash
-# 1. Make sure you're on a green main, version is bumped, and CHANGELOG is
-#    up to date.
+# 1. Make sure you're on a green main, the version is bumped, and CHANGELOG is
+#    up to date (the release body is copied from it).
 git checkout main
 git pull --rebase
-# (bump workspace.version in Cargo.toml + commit, if not done)
+# (bump workspace.version in Cargo.toml + add a CHANGELOG.md section + commit, if not done)
 
 # 2. Tag with semver (short form — the workflow trims trailing zero
 #    components, so v1.0 matches Cargo's 1.0.0).
@@ -34,7 +34,7 @@ git push origin v1.0
    (any tag name works).
    The full matrix builds again, and the installers + `SHA256SUMS` are
    attached to the GitHub Release for that tag (created if missing, with
-   auto-generated notes from merged PRs).
+   the body copied from the current version's section in `CHANGELOG.md`).
 
 In both cases the tag (e.g. `v1.0`) drives the package version
 (`-Ploggi.version=1.0`). The Cargo workspace version is full semver

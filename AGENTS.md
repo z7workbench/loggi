@@ -89,6 +89,21 @@ windows-latest / macos-latest / ubuntu-latest.
   command, file path, and version reference still matches what the code
   actually does.
 
+## Releases & changelog
+
+- The version lives in `Cargo.toml` (`[workspace.package] version`, full
+  semver); the release workflow, installers and About window derive from it.
+  Bump it with every release.
+- **`CHANGELOG.md`** at the repo root is the single source of truth for
+  release notes: every release gets a `# vX.Y - <codename>` section, and the
+  release workflow copies that section into the GitHub Release body (it
+  fails if the section is missing — keep the changelog in sync before
+  tagging).
+- **Release titles** use the form `vX.Y - <adjective> <plant>`, where the
+  first letter follows the major version (1 → A, 2 → B, …). All releases of
+  the same major line share one codename (1.x = `Ancient Agave`), which is
+  also shown in the About window.
+
 ## Testing expectations
 
 - Unit + property tests on synthetic files (trailing-LF-less files, UTF-16, CRLF, huge single
