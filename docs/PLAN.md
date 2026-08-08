@@ -349,7 +349,8 @@ settings + highlighters windows, Dock icon) plus a Windows + Linux spot-check be
   (documented, best-effort in CI with secrets), Linux signing best-effort.
 - **Release CI** (`release.yml`, new): triggers on every push + tag push
   (uploads to GitHub Releases only on tag push); jobs:
-  - matrix build (ubuntu/macos/windows) → `packageDmg|Exe|Deb|Rpm` with release JNI profile;
+  - matrix build (ubuntu/macos/windows × x64/arm64) → `packageDmg|Exe|Deb|Rpm` with release JNI profile
+    (+ a `macos-universal` job that lipo-merges the two mac apps into a fat dmg/pkg);
   - per-OS smoke tests on the packaged app (open 10 GB file, search, follow);
   - assemble release: installers + `SHA256SUMS` + release notes → **upload to GitHub Releases**
     as artifacts.

@@ -43,16 +43,20 @@ installers use the short form `1.0`.
 
 ## What gets built
 
-The matrix job runs on `ubuntu-latest`, `macos-latest`, `windows-latest`.
+The matrix job runs on `ubuntu-latest`, `macos-latest` (arm64),
+`macos-15-intel` (x64), `windows-latest` (x64) and `windows-11-arm` (arm64).
 Each runner builds the release JNI cdylib (`-Ploggi.jni.profile=release`),
 then assembles the native installers via `gradlew :desktopApp:packageDmg |
 packageExe | packageDeb | packageRpm` (with `packagePkg` as best-effort).
+On tag pushes a `macos-universal` job additionally merges the x64 + arm64
+app bundles with `lipo` (launcher + JVM runtime + both JNI dylibs in the
+jar) and repackages a universal `.dmg` + `.pkg`.
 
-| OS | Formats |
-|---|---|
-| Windows | `.exe` (NSIS) |
-| macOS | `.dmg` + `.pkg` |
-| Linux | `.deb` (Ubuntu/Debian) + `.rpm` (RHEL/Fedora/SUSE) |
+| OS | Architectures | Formats |
+|---|---|---|
+| Windows | x64 + arm64 | `.exe` (NSIS) |
+| macOS | x64 + arm64 + universal | `.dmg` + `.pkg` |
+| Linux | x64 | `.deb` (Ubuntu/Debian) + `.rpm` (RHEL/Fedora/SUSE) |
 
 The Rust cdylib is bundled inside the app image under `natives/<os>-<arch>/`
 and extracted + `System.load`ed at runtime. A smoke step at the end of each

@@ -183,7 +183,9 @@ RSS growth budget. See `docs/perf.md` for the full memory model + gates.
 
 M10 (2026-08-08) closed the packaging + release pipeline: `desktopApp` ships
 Dmg/Pkg/Exe/Deb/**Rpm** (Rpm is new in M10; Windows ships the NSIS `.exe`
-only — no MSI); macOS signing +
+only — no MSI; macOS and Windows installers are built for both x64 and
+arm64, Linux for x64; tag pushes also merge a **universal** macOS dmg+pkg
+via `lipo` in a `macos-universal` job); macOS signing +
 notarization are best-effort and gated on `MACOS_SIGNING_*` /
 `MACOS_NOTARIZATION_*` env vars; Windows Authenticode signing is applied by
 a post-build signtool step in `release.yml`. The release workflow
