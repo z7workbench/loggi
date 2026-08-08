@@ -1,0 +1,14 @@
+[package]
+name = "loggi-engine-jni"
+description = "JNI cdylib bridge between the loggi engine and the Kotlin/JVM UI (thin marshalling only)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "loggi_engine_jni"
+crate-type = ["cdylib"]
+
+[dependencies]
+loggi-engine.workspace = true
+jni = "0.21"
