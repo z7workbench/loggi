@@ -1,0 +1,28 @@
+[package]
+name = "loggi-bench"
+description = "criterion benchmarks + soak harness + synthetic log generator for loggi-engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+loggi-engine.workspace = true
+criterion = { version = "0.5", features = ["html_reports"] }
+tempfile = "3"
+memory-stats = "1"
+
+[[bin]]
+name = "gen-log"
+path = "src/bin/gen-log.rs"
+
+[[bin]]
+name = "soak"
+path = "src/bin/soak.rs"
+
+[[bin]]
+name = "perf-gate"
+path = "src/bin/perf-gate.rs"
+
+[[bench]]
+name = "engine"
+harness = false
