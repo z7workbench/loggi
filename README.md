@@ -1,122 +1,94 @@
-# loggi - High-Performance Log Viewer
+# loggi
 
-[![.NET](https://img.shields.io/badge/.NET-9.0-blue.svg)](https://dotnet.microsoft.com/)
-[![Rust](https://img.shields.io/badge/Rust-1.70+-orange.svg)](https://www.rust-lang.org/)
-[![Avalonia](https://img.shields.io/badge/Avalonia-11.0+-5596C8?logo=avalonia)](https://avaloniaui.net/)
-[![Powered by Qwen-Code](https://img.shields.io/badge/Powered%20by-Qwen--Code-8A2BE2?logo=github&logoColor=white)](https://github.com/QwenLM/Qwen-Code)
+A desktop log viewer for very large log files.
 
-loggi is a cross-platform, high-performance log file viewer built with a Rust core and Avalonia UI. It efficiently handles large log files using memory mapping technology and provides fast search capabilities.
+- **Rust engine** (`crates/engine`): line-offset indexing (compressed, ~1.4
+  bytes/line), lazy `pread`-based reading, parallel ripgrep-class search
+  (Roaring bitsets, memchr/aho-corasick/regex fast paths), follow-tail with
+  XXH64 change detection, UTF-8/UTF-16/UTF-32 + chardetng encodings.
+- **CLI** (`crates/cli`): `loggi info|search|tail` with rg-inspired flags and
+  `--json` output.
+- **MCP server** (`crates/mcp`): stdio JSON-RPC server (`file_info`,
+  `read_lines`, `search` with streamed batches + progress, `cancel`).
+- **Bench suite** (`crates/bench`): criterion benchmarks, soak harness (flat
+  RSS gate), synthetic log generator (`gen-log`), CI perf gate.
+- **Desktop app** (`shared` + `desktopApp` Gradle modules): Kotlin Multiplatform
+  (Compose Multiplatform, JVM target) — virtualized main view over engine chunks, streaming
+  search with three layouts (side / bottom / detached window), tabs (horizontal or vertical),
+  drag-selection copy, text highlighting, pinned lines, light/dark themes, EN + zh-Hans i18n,
+  `loggi.conf` session persistence, minimap overview strip. Rust interop is JNI
+  (`crates/engine-jni` cdylib; UniFFI was considered and rejected for hot-buffer control —
+  see `docs/PLAN.md` §2).
 
-## ✨ Features
+See `docs/PLAN.md` (milestones M0–M10) and `docs/benchmarks.md` (measured
+baselines).
 
-- **High Performance**: Memory-mapped file access enables fast loading of large log files
-- **Virtual Scrolling**: Smooth navigation through millions of log lines
-- **Text Search**: Fast full-text search with case-sensitive option
-- **Regex Search**: Advanced pattern matching for complex searches
-- **Cross-Platform**: Runs on Windows, Linux, and macOS
-- **Modern UI**: Built with Avalonia UI for native look and feel
+## Prerequisites
 
-## 🚀 Getting Started
+- **Rust** (stable toolchain, `rustfmt` + `clippy` components) — engine, CLI, MCP, JNI bridge.
+- **JDK 21** — the Gradle build compiles/runs the desktop app (the toolchain resolver
+  auto-provisions one when `JAVA_HOME` is missing).
+- `cargo` on `PATH` — the Gradle `cargoBuildJni` task shells out to it.
 
-### Prerequisites
+## Build
 
-- [.NET 9.0+](https://dotnet.microsoft.com/download)
-- [Rust 1.70+](https://www.rust-lang.org/tools/install)
-- Avalonia 11.0+
+```sh
+# Rust workspace (engine, CLI, MCP, bench, JNI cdylib) — debug
+cargo build
 
-### Building the Project
+# …or release
+cargo build --release
 
-#### Windows
-
-```powershell
-# Clone the repository
-git clone https://github.com/z7workbench/loggi.git
-cd loggi
-
-# Build the Rust core library
-.\scripts\build-rust.ps1
-
-# Build and run the application
-cd src\avalonia
-dotnet run
+# Desktop app (Kotlin/Compose) — also builds the JNI cdylib via cargo
+./gradlew :desktopApp:build
 ```
 
-#### Linux/macOS
+## Run
 
-```bash
-# Clone the repository
-git clone https://github.com/z7workbench/loggi.git
-cd loggi
+```sh
+# CLI: info / search / tail
+./target/release/loggi info <file>
+./target/release/loggi search -F -i "ERROR" <file>
+./target/release/loggi search -C 2 --json <file> <pattern>
+./target/release/loggi tail --lines 50 --follow <file>
 
-# Build the Rust core library
-./scripts/build-rust.sh
+# MCP server (stdio)
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' | ./target/release/loggi-mcp
 
-# Build and run the application
-cd src/avalonia
-dotnet run
+# Desktop app — auto-builds the JNI cdylib (debug profile) on first run
+./gradlew :desktopApp:run
+
+# benchmarks / test data / soak
+cargo run --release -p loggi-bench --bin perf-gate
+cargo run --release -p loggi-bench --bin gen-log -- 1g repeat /tmp/big.log
+cargo run --release -p loggi-bench --bin soak -- /tmp/big.log 100
 ```
 
-## 🏗️ Architecture
+## Test
 
-### Project Structure
+```sh
+cargo test --workspace          # Rust: unit + property + CLI golden + MCP tests
+cargo clippy --workspace --all-targets -- -D warnings
+cargo fmt --check
 
-```
-src/
-├── rust/                 # Rust core library (loggi_core)
-│   ├── Cargo.toml        # Rust dependencies and build config
-│   └── src/
-│       └── lib.rs        # Memory mapping, search algorithms, and FFI
-├── avalonia/             # Avalonia UI application
-│   ├── Loggi.csproj      # .NET project file
-│   ├── Program.cs        # Application entry point
-│   ├── App.axaml         # Application definition
-│   ├── Views/            # UI views and controls
-│   ├── ViewModels/       # MVVM view models
-│   ├── Services/         # Service layer (including Rust interop)
-│   └── Converters/       # Value converters for UI
-└── scripts/              # Build and utility scripts
-    ├── build-rust.sh     # Unix build script
-    └── build-rust.ps1    # Windows PowerShell build script
+./gradlew :shared:jvmTest       # JVM: JNI bridge smoke test + model/settings/i18n tests
 ```
 
-### Tech Stack
+## Package installers
 
-- **Backend (Rust)**:
-  - `memmap2`: Efficient memory mapping for large file access
-  - `serde`: JSON serialization for data exchange
-  - `regex`: Advanced pattern matching for regex searches
-  - FFI: C ABI functions for interoperability with C#
+Installers bundle the JRE and the JNI cdylib; icons come from `packaging/`.
+Use the release Rust profile so the bundled engine is optimized:
 
-- **Frontend (C# Avalonia)**:
-  - Avalonia 11+: Cross-platform XAML-based UI framework
-  - CommunityToolkit.Mvvm: MVVM pattern implementation
-  - ItemsRepeater: Virtualized list controls for performance
+```sh
+# macOS → desktopApp/build/compose/binaries/main-release/dmg/
+./gradlew :desktopApp:packageDmg -Ploggi.jni.profile=release
 
-## 🛠️ Usage
+# Windows (on a Windows host) / Debian (on a Linux host)
+./gradlew :desktopApp:packageMsi -Ploggi.jni.profile=release
+./gradlew :desktopApp:packageDeb -Ploggi.jni.profile=release
+```
 
-1. **Open a Log File**: Click the open file button to select a log file
-2. **Navigate**: Use the virtualized scroll bar to quickly navigate through the log
-3. **Search**:
-   - Text search: Enter your search term in the search box
-   - Case-sensitive option: Toggle for case-sensitive matching
-   - Regex search: Use regex patterns for advanced searches
-4. **Jump to Results**: Double-click a search result to highlight and navigate to that line
+Settings live in `loggi.conf` next to the working directory when present (portable mode),
+otherwise in the per-OS app-config dir (`~/.config/loggi`, `%APPDATA%\loggi`,
+`~/Library/Application Support/loggi`). Override with `-Dloggi.config=<path>`.
 
-## 📁 File Structure
-
-The project is organized as a hybrid application with separate Rust and C# components:
-
-- **Rust (`src/rust`)**: Handles file I/O, memory mapping, and search operations
-- **Avalonia UI (`src/avalonia`)**: Provides the user interface and application logic
-- **Build Scripts (`scripts/`)**: Automate the build process across platforms
-
-## 💡 Performance Highlights
-
-- **Memory Mapping**: Large files are accessed via memory mapping instead of loading entirely into RAM
-- **Efficient Searching**: Rust backend provides fast full-text and regex search capabilities
-- **Virtualization**: UI only renders visible log lines for smooth scrolling
-- **Caching**: Recently accessed file mapping is cached for improved performance
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

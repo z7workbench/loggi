@@ -1,122 +1,88 @@
-# loggi - 高性能日志查看器
+# loggi
 
-[![.NET](https://img.shields.io/badge/.NET-9.0-blue.svg)](https://dotnet.microsoft.com/)
-[![Rust](https://img.shields.io/badge/Rust-1.70+-orange.svg)](https://www.rust-lang.org/)
-[![Avalonia](https://img.shields.io/badge/Avalonia-11.0+-5596C8?logo=avalonia)](https://avaloniaui.net/)
-[![Powered by Qwen-Code](https://img.shields.io/badge/Powered%20by-Qwen--Code-8A2BE2?logo=github&logoColor=white)](https://github.com/QwenLM/Qwen-Code)
+面向超大日志文件的桌面日志查看器。
 
-loggi 是一款跨平台、高性能的日志文件查看器，采用 Rust 核心和 Avalonia UI 构建。它使用内存映射技术高效处理大型日志文件，并提供快速搜索功能。
+- **Rust 引擎**（`crates/engine`）：行偏移索引（压缩后约 1.4 字节/行）、基于 `pread`
+  的惰性读取、并行 ripgrep 级搜索（Roaring 位图、memchr/aho-corasick/regex 快速路径）、
+  XXH64 变更检测的尾部跟随、UTF-8/UTF-16/UTF-32 + chardetng 编码。
+- **CLI**（`crates/cli`）：`loggi info|search|tail`，带 rg 风格参数与 `--json` 输出。
+- **MCP 服务器**（`crates/mcp`）：stdio JSON-RPC 服务器（`file_info`、`read_lines`、
+  `search` 流式批次 + 进度、`cancel`）。
+- **基准套件**（`crates/bench`）：criterion 基准、soak 压力测试（平坦 RSS 门禁）、
+  合成日志生成器（`gen-log`）、CI 性能门禁。
+- **桌面应用**（`shared` + `desktopApp` Gradle 模块）：Kotlin Multiplatform
+  （Compose Multiplatform，JVM 目标）——基于引擎分块的虚拟化主视图、三种布局的流式
+  搜索（左右 / 上下 / 独立窗口）、标签页（水平或垂直）、拖拽选择复制、文本高亮、
+  固定行、明暗主题、中英双语界面、`loggi.conf` 会话持久化、迷你概览条。Rust 互操作
+  走 JNI（`crates/engine-jni` cdylib；曾评估 UniFFI，因热缓冲区控制需求而放弃——
+  见 `docs/PLAN.md` §2）。
 
-## ✨ 特性
+参见 `docs/PLAN.md`（里程碑 M0–M10）与 `docs/benchmarks.md`（实测基线）。
 
-- **高性能**: 内存映射文件访问，能够快速加载大型日志文件
-- **虚拟滚动**: 流畅导航数百万行日志
-- **文本搜索**: 快速全文搜索，支持大小写敏感选项
-- **正则搜索**: 高级模式匹配，适用于复杂搜索
-- **跨平台**: 支持 Windows、Linux 和 macOS
-- **现代 UI**: 使用 Avalonia UI 构建，提供原生外观和体验
+## 环境要求
 
-## 🚀 快速开始
+- **Rust**（stable 工具链，含 `rustfmt` + `clippy` 组件）——引擎、CLI、MCP、JNI 桥。
+- **JDK 21**——Gradle 构建/运行桌面应用（缺少 `JAVA_HOME` 时工具链解析器会自动提供）。
+- `cargo` 在 `PATH` 中——Gradle 的 `cargoBuildJni` 任务会调用它。
 
-### 先决条件
+## 构建
 
-- [.NET 9.0+](https://dotnet.microsoft.com/download)
-- [Rust 1.70+](https://www.rust-lang.org/tools/install)
-- Avalonia 11.0+
+```sh
+# Rust 工作区（引擎、CLI、MCP、bench、JNI cdylib）——debug
+cargo build
 
-### 构建项目
+# …或 release
+cargo build --release
 
-#### Windows
-
-```powershell
-# 克隆仓库
-git clone https://github.com/z7workbench/loggi.git
-cd loggi
-
-# 构建 Rust 核心库
-.\scripts\build-rust.ps1
-
-# 构建并运行应用程序
-cd src\avalonia
-dotnet run
+# 桌面应用（Kotlin/Compose）——同时通过 cargo 构建 JNI cdylib
+./gradlew :desktopApp:build
 ```
 
-#### Linux/macOS
+## 运行
 
-```bash
-# 克隆仓库
-git clone https://github.com/z7workbench/loggi.git
-cd loggi
+```sh
+# CLI：info / search / tail
+./target/release/loggi info <file>
+./target/release/loggi search -F -i "ERROR" <file>
+./target/release/loggi search -C 2 --json <file> <pattern>
+./target/release/loggi tail --lines 50 --follow <file>
 
-# 构建 Rust 核心库
-./scripts/build-rust.sh
+# MCP 服务器（stdio）
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' | ./target/release/loggi-mcp
 
-# 构建并运行应用程序
-cd src/avalonia
-dotnet run
+# 桌面应用——首次运行自动构建 JNI cdylib（debug 配置）
+./gradlew :desktopApp:run
+
+# 基准 / 测试数据 / soak
+cargo run --release -p loggi-bench --bin perf-gate
+cargo run --release -p loggi-bench --bin gen-log -- 1g repeat /tmp/big.log
+cargo run --release -p loggi-bench --bin soak -- /tmp/big.log 100
 ```
 
-## 🏗️ 架构
+## 测试
 
-### 项目结构
+```sh
+cargo test --workspace          # Rust：单元 + 属性 + CLI 黄金 + MCP 测试
+cargo clippy --workspace --all-targets -- -D warnings
+cargo fmt --check
 
-```
-src/
-├── rust/                 # Rust 核心库 (loggi_core)
-│   ├── Cargo.toml        # Rust 依赖和构建配置
-│   └── src/
-│       └── lib.rs        # 内存映射、搜索算法和 FFI
-├── avalonia/             # Avalonia UI 应用程序
-│   ├── Loggi.csproj      # .NET 项目文件
-│   ├── Program.cs        # 应用程序入口点
-│   ├── App.axaml         # 应用程序定义
-│   ├── Views/            # UI 视图和控件
-│   ├── ViewModels/       # MVVM 视图模型
-│   ├── Services/         # 服务层 (包括 Rust 互操作)
-│   └── Converters/       # UI 值转换器
-└── scripts/              # 构建和实用脚本
-    ├── build-rust.sh     # Unix 构建脚本
-    └── build-rust.ps1    # Windows PowerShell 构建脚本
+./gradlew :shared:jvmTest       # JVM：JNI 桥冒烟测试 + 模型/设置/i18n 测试
 ```
 
-### 技术栈
+## 打包安装程序
 
-- **后端 (Rust)**:
-  - `memmap2`: 用于大型文件访问的高效内存映射
-  - `serde`: 用于数据交换的 JSON 序列化
-  - `regex`: 用于高级模式匹配的正则搜索
-  - FFI: 与 C# 交互的 C ABI 函数
+安装程序捆绑 JRE 与 JNI cdylib；图标来自 `packaging/`。使用 release Rust 配置以
+获得优化的内置引擎：
 
-- **前端 (C# Avalonia)**:
-  - Avalonia 11+: 跨平台基于 XAML 的 UI 框架
-  - CommunityToolkit.Mvvm: MVVM 模式实现
-  - ItemsRepeater: 用于性能的虚拟化列表控件
+```sh
+# macOS → desktopApp/build/compose/binaries/main-release/dmg/
+./gradlew :desktopApp:packageDmg -Ploggi.jni.profile=release
 
-## 🛠️ 使用方法
+# Windows（在 Windows 主机上）/ Debian（在 Linux 主机上）
+./gradlew :desktopApp:packageMsi -Ploggi.jni.profile=release
+./gradlew :desktopApp:packageDeb -Ploggi.jni.profile=release
+```
 
-1. **打开日志文件**: 点击打开文件按钮选择日志文件
-2. **导航**: 使用虚拟化滚动条快速浏览日志
-3. **搜索**:
-   - 文本搜索: 在搜索框中输入搜索词
-   - 区分大小写选项: 切换区分大小写的匹配
-   - 正则搜索: 使用正则表达式模式进行高级搜索
-4. **跳转到结果**: 双击搜索结果以高亮并导航到该行
-
-## 📁 文件结构
-
-该项目组织为具有独立 Rust 和 C# 组件的混合应用程序:
-
-- **Rust (`src/rust`)**: 处理文件 I/O、内存映射和搜索操作
-- **Avalonia UI (`src/avalonia`)**: 提供用户界面和应用程序逻辑
-- **构建脚本 (`scripts/`)**: 跨平台自动化构建过程
-
-## 💡 性能亮点
-
-- **内存映射**: 大型文件通过内存映射访问，而不是完全加载到 RAM 中
-- **高效搜索**: Rust 后端提供快速全文和正则搜索功能
-- **虚拟化**: UI 只渲染可见的日志行以实现流畅滚动
-- **缓存**: 最近访问的文件映射被缓存以提高性能
-
-## 📄 许可证
-
-本项目根据 MIT 许可证授权 - 详情请参阅 [LICENSE](LICENSE) 文件。
+设置保存在 `loggi.conf` 中：工作目录下存在时使用便携模式，否则使用各平台的
+应用配置目录（`~/.config/loggi`、`%APPDATA%\loggi`、`~/Library/Application Support/loggi`）。
+可用 `-Dloggi.config=<path>` 覆盖。
