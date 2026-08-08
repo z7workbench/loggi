@@ -222,7 +222,7 @@ jobs:
             notes += '- Windows: `*.exe` (NSIS)\n';
             notes += '- Linux: `*.deb` (Ubuntu/Debian), `*.rpm` (RHEL/Fedora/SUSE)\n';
             notes += '\nVerify with `SHA256SUMS`.\n';
-            await fs.writeFile('RELEASE_BODY.md', notes);
+            await fs.promises.writeFile('RELEASE_BODY.md', notes);
       - name: Create / update release
         uses: softprops/action-gh-release@v2
         with:
