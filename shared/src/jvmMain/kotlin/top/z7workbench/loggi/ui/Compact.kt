@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -342,15 +343,21 @@ fun CompactNumberSpinner(
 @Composable
 private fun SpinArrow(glyph: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
     Box(
         modifier
-            .width(16.dp)
-            .height(10.dp)
-            .clip(RoundedCornerShape(2.dp))
-            .border(1.dp, scheme.outline, RoundedCornerShape(2.dp))
-            .clickable(onClick = onClick),
+            .width(18.dp)
+            .height(12.dp)
+            .clip(RoundedCornerShape(3.dp))
+            .background(if (hovered) scheme.surfaceVariant else Color.Transparent)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick,
+            ),
         contentAlignment = Alignment.Center,
     ) {
-        Text(glyph, fontSize = 7.sp, color = scheme.onSurfaceVariant, maxLines = 1)
+        Text(glyph, fontSize = 9.sp, color = scheme.onSurface, maxLines = 1)
     }
 }
