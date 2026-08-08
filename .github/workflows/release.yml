@@ -28,7 +28,7 @@ jobs:
       cargo: ${{ steps.ver.outputs.cargo }}
       version: ${{ steps.norm.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@stable
@@ -87,9 +87,9 @@ jobs:
             artifact: Loggi-${{ needs.verify.outputs.version }}-linux-x64.rpm
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: jetbrains
           java-version: "21"
@@ -100,7 +100,7 @@ jobs:
         with:
           workspaces: "crates/engine crates/engine-jni -> target"
       - name: Cache Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: ${{ github.ref_type != 'tag' }}
       - name: Print version
@@ -156,7 +156,7 @@ jobs:
           cargo run --release -p loggi-bench --bin perf-gate -- /tmp/loggi-smoke-1g.log
         if: runner.os != 'Windows'
       - name: Upload installer
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.artifact }}
@@ -164,7 +164,7 @@ jobs:
           retention-days: 14
         if: github.ref_type == 'tag'
       - name: Upload SHA256SUMS partial
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sha256sums-partial-${{ matrix.os }}-${{ matrix.format }}
           path: sha256sums-partial-${{ matrix.os }}-${{ matrix.format }}.txt
@@ -181,11 +181,11 @@ jobs:
     if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: release-assets
           merge-multiple: true
@@ -224,7 +224,7 @@ jobs:
             notes += '\nVerify with `SHA256SUMS`.\n';
             await fs.promises.writeFile('RELEASE_BODY.md', notes);
       - name: Create / update release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.verify.outputs.name }}
           name: "loggi ${{ needs.verify.outputs.version }}"
