@@ -20,9 +20,26 @@ dependencies {
 // ---------------------------------------------------------------------------
 // Version: -Ploggi.version=… overrides the default (read from the Cargo
 // workspace Cargo.toml so Rust + desktop app share a single source of truth).
-// Used by the jpackage version + the Windows MSI/Exe and Linux Deb/Rpm
+// Used by the jpackage version + the Windows Exe and Linux Deb/Rpm
 // packageVersion fields. Release CI sets this from the tag.
+//
+// Cargo requires full semver ("1.0.0") but the user-facing version is
+// two-part ("1.0"); trailing ".0" components are trimmed here so installers
+// and the About window agree. Windows NSIS is the exception: it mandates a
+// three-part MAJOR.MINOR.BUILD, so the exe gets the padded form (1.0 → 1.0.0).
 // ---------------------------------------------------------------------------
+fun trimVersion(v: String): String {
+    val parts = v.split('.')
+    var end = parts.size
+    while (end > 2 && parts[end - 1] == "0") end--
+    return parts.take(end).joinToString(".")
+}
+
+fun padVersion(v: String, minParts: Int = 3): String {
+    val parts = v.split('.')
+    return (parts + List((minParts - parts.size).coerceAtLeast(0)) { "0" }).joinToString(".")
+}
+
 val loggiVersion: String = run {
     val override = providers.gradleProperty("loggi.version").orNull?.takeIf { it.isNotBlank() }
     if (override != null) {
@@ -33,8 +50,9 @@ val loggiVersion: String = run {
             Regex("""^\s*version\s*=\s*"([^"]+)"\s*$""", RegexOption.MULTILINE)
                 .find(cargo.readText())
                 ?.groupValues?.get(1)
+                ?.let { trimVersion(it) }
         } else null
-    } ?: "0.1.0"
+    } ?: "1.0"
 }
 
 compose.desktop {
@@ -43,10 +61,11 @@ compose.desktop {
 
         nativeDistributions {
             // M10: every supported OS family. Rpm is new in M10 (PLAN.md §3).
-            // Pkg (macOS installer) and Exe (Windows NSIS) are best-effort.
+            // Windows ships the NSIS .exe only (no MSI); macOS .pkg is
+            // best-effort alongside .dmg.
             targetFormats(
                 TargetFormat.Dmg, TargetFormat.Pkg,
-                TargetFormat.Msi, TargetFormat.Exe,
+                TargetFormat.Exe,
                 TargetFormat.Deb, TargetFormat.Rpm,
             )
             packageName = "Loggi"
@@ -60,8 +79,7 @@ compose.desktop {
             //   - macOS: CFBundleDocumentTypes in Info.plist (LSItemContentTypes
             //     = [public.data]);
             //   - Windows: registry entries under HKCR\* — we additionally
-            //     re-register HKCU\* at runtime (per-user, locale-aware) since
-            //     jpackage's MSI writes to HKLM and that needs admin;
+            //     re-register HKCU\* at runtime (per-user, locale-aware);
             //   - Linux: MimeType= in the installed .desktop file.
             macOS {
                 iconFile.set(rootProject.file("packaging/icon.icns"))
@@ -95,8 +113,8 @@ compose.desktop {
             }
             windows {
                 iconFile.set(rootProject.file("packaging/icon.ico"))
-                perUserInstall = true
-                dirChooser = true
+                // NSIS requires MAJOR.MINOR.BUILD; jpackage rejects "1.0".
+                exePackageVersion = padVersion(loggiVersion)
                 fileAssociation(extension = "*", mimeType = "public.data", description = "Any file")
                 // Windows Authenticode signing is applied post-build in
                 // `release.yml` via signtool. The DSL does not expose
@@ -129,12 +147,14 @@ tasks.register("printVersion") {
     inputs.file(cargoFile).optional(true).withPropertyName("cargo")
     doLast {
         val override = versionProvider.orNull
-        val resolved = override?.takeIf { it.isNotBlank() }
-            ?: if (cargoFile.exists()) {
-                Regex("""^\s*version\s*=\s*"([^"]+)"\s*$""", RegexOption.MULTILINE)
-                    .find(cargoFile.readText())?.groupValues?.get(1)
-            } else null
-            ?: "0.1.0"
-        println(resolved)
+        val fromCargo = if (cargoFile.exists()) {
+            Regex("""^\s*version\s*=\s*"([^"]+)"\s*$""", RegexOption.MULTILINE)
+                .find(cargoFile.readText())?.groupValues?.get(1)
+        } else null
+        val raw: String = override?.takeIf { it.isNotBlank() } ?: fromCargo ?: "1.0"
+        val parts = raw.split('.')
+        var end = parts.size
+        while (end > 2 && parts[end - 1] == "0") end--
+        println(parts.take(end).joinToString("."))
     }
 }

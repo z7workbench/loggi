@@ -77,6 +77,8 @@ class RuStrings : Strings() {
     override val aboutTitle = "О Loggi"
     override fun aboutText(engineVersion: String) =
         "Loggi — просмотрщик журналов для очень больших файлов.\nДвижок: $engineVersion"
+    override val aboutVersionLabel = "Версия"
+    override val aboutLicense = "Лицензия: MIT"
     override val customColorTitle = "Свой цвет"
     override val openWithLoggi = "Открыть с помощью Loggi"
     override val dropToOpen = "Отпустите файлы, чтобы открыть их"

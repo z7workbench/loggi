@@ -103,6 +103,8 @@ abstract class Strings {
     abstract val invalidLineNumber: String
     abstract val aboutTitle: String
     abstract fun aboutText(engineVersion: String): String
+    abstract val aboutVersionLabel: String
+    abstract val aboutLicense: String
     abstract val customColorTitle: String
 
     // OS integration (M11) — "Open with Loggi" shell verb / Open With menu

@@ -59,7 +59,7 @@ import top.z7workbench.loggi.settings.SearchLayout
 import top.z7workbench.loggi.settings.TabPlacement
 import top.z7workbench.loggi.theme.LocalLoggiColors
 import top.z7workbench.loggi.theme.LoggiTheme
-import top.z7workbench.loggi.ui.AboutDialog
+import top.z7workbench.loggi.ui.AboutWindow
 import top.z7workbench.loggi.ui.ColorPickerDialog
 import top.z7workbench.loggi.ui.CompactButton
 import top.z7workbench.loggi.ui.CompactDropdownMenu
@@ -518,7 +518,7 @@ private fun AppDialogs(app: AppViewModel) {
     if (app.showSettings) SettingsWindow(app) { app.showSettings = false }
     if (app.showHighlighters) HighlightersWindow(app) { app.showHighlighters = false }
     if (app.showSearchHistory) SearchHistoryWindow(app) { app.showSearchHistory = false }
-    if (app.showAbout) AboutDialog { app.showAbout = false }
+    if (app.showAbout) AboutWindow { app.showAbout = false }
     app.goToLineFor?.let { vm -> GoToLineDialog(vm) { app.goToLineFor = null } }
     app.renameFor?.let { tab -> RenameDialog(tab) { app.renameFor = null } }
     app.colorPicker?.let { req -> ColorPickerDialog(req) { app.colorPicker = null } }

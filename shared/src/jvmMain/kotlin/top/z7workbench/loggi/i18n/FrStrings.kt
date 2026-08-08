@@ -77,6 +77,8 @@ class FrStrings : Strings() {
     override val aboutTitle = "À propos de Loggi"
     override fun aboutText(engineVersion: String) =
         "Loggi — un visionneur de journaux pour très gros fichiers.\nMoteur : $engineVersion"
+    override val aboutVersionLabel = "Version"
+    override val aboutLicense = "Licence : MIT"
     override val customColorTitle = "Couleur personnalisée"
     override val openWithLoggi = "Ouvrir avec Loggi"
     override val dropToOpen = "Déposez des fichiers ici pour les ouvrir"

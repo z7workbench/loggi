@@ -42,7 +42,7 @@ and `desktopApp` (entry point + packaging); project-level Gradle config lives in
 - Compile only (no cargo needed): `./gradlew compileKotlinJvm compileTestKotlinJvm compileKotlin`
 - JVM tests (bridge smoke + model + Compose UI tests; builds the cdylib via cargo):
   `./gradlew :shared:jvmTest`
-- Installers (M10 hardening): `./gradlew :desktopApp:packageDmg|Msi|Deb
+- Installers (M10 hardening): `./gradlew :desktopApp:packageDmg|Exe|Deb
   -Ploggi.jni.profile=release`; app icons come from `packaging/`.
 
 CI runs: `cargo fmt --check`, `cargo clippy -D warnings`, `cargo test`, Gradle build, on
@@ -169,7 +169,7 @@ Search history is global and persisted in `loggi.conf`
 primary-button-only, so right-click keeps the drag selection for highlight.
 
 Remaining milestones: M9 (perf & memory hardening), M10 (packaging/release:
-Dmg/Msi/Deb/**Rpm** installers, signing, release CI uploading artifacts to
+Dmg/Exe/Deb/**Rpm** installers, signing, release CI uploading artifacts to
 GitHub Releases), M11 (OS integration: `loggi <file>` CLI entry, "Open with
 Loggi"/"使用 Loggi 打开" right-click verb for any file extension with i18n —
 see `docs/PLAN.md`).
@@ -182,7 +182,8 @@ search cache eviction covered by `cycles_dont_grow_cache` and
 RSS growth budget. See `docs/perf.md` for the full memory model + gates.
 
 M10 (2026-08-08) closed the packaging + release pipeline: `desktopApp` ships
-Dmg/Pkg/Msi/Exe/Deb/**Rpm** (Rpm is new in M10); macOS signing +
+Dmg/Pkg/Exe/Deb/**Rpm** (Rpm is new in M10; Windows ships the NSIS `.exe`
+only — no MSI); macOS signing +
 notarization are best-effort and gated on `MACOS_SIGNING_*` /
 `MACOS_NOTARIZATION_*` env vars; Windows Authenticode signing is applied by
 a post-build signtool step in `release.yml`. The release workflow
@@ -199,7 +200,7 @@ shows up under right-click for any file extension on every OS:
   `Info.plist` (`CFBundleDocumentTypes`, `LSItemContentTypes`) — no runtime
   work.
 - Windows: runtime registration to `HKCU\Software\Classes\*\shell\Loggi`
-  via `os.WindowsFileAssociation` (`reg.exe`); jpackage's MSI verb is
+  via `os.WindowsFileAssociation` (`reg.exe`); jpackage's HKCR\* verb is
   HKLM-only (admin required), so per-user HKCU is re-registered on first
   run and on every locale change so the verb display name follows the UI
   language.

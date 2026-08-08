@@ -104,7 +104,7 @@ the log view, EN/zh-Hans i18n, theme modes, Rust CLI + MCP).
 - **JNI rules**: no engine logic in the bridge; no per-line Java strings — return chunked raw
   bytes; all long operations run on `Dispatchers.Default` (never the UI thread); search
   cancellation via search-id + flag.
-- **Packaging**: JDK `jpackage` (bundles JRE): `.dmg`/`.pkg` (macOS), `.msi`/`.exe` (Windows),
+- **Packaging**: JDK `jpackage` (bundles JRE): `.dmg`/`.pkg` (macOS), `.exe` (Windows, NSIS),
   `.deb`/`.rpm` (Linux) + AppImage; GitHub Actions matrix builds the Rust cdylib + JVM jar per
   OS and assembles installers on tag. Signing/notarization in M10.
 
@@ -338,7 +338,7 @@ settings + highlighters windows, Dock icon) plus a Windows + Linux spot-check be
 - Installer targets per OS (JDK `jpackage`, `-Ploggi.jni.profile=release`, icons from
   `packaging/`):
   - macOS: `.dmg` (+ `.pkg` best-effort);
-  - Windows: `.msi` (+ `.exe` via NSIS best-effort);
+  - Windows: `.exe` (NSIS);
   - Linux: `.deb` (Ubuntu/Debian), `.rpm` (RHEL/Fedora/SUSE — **new**, jpackage supports
     `TargetFormat.Rpm`), AppImage best-effort.
   - The Rust cdylib is already bundled inside the jar resources and extracted at runtime —
@@ -348,7 +348,7 @@ settings + highlighters windows, Dock icon) plus a Windows + Linux spot-check be
 - Code signing: macOS notarization (Developer ID + stapler), Windows Authenticode
   (documented, best-effort in CI with secrets), Linux signing best-effort.
 - **Release CI** (`release.yml`, new): triggers on tag push (`v*`); jobs:
-  - matrix build (ubuntu/macos/windows) → `packageDmg|Msi|Deb|Rpm` with release JNI profile;
+  - matrix build (ubuntu/macos/windows) → `packageDmg|Exe|Deb|Rpm` with release JNI profile;
   - per-OS smoke tests on the packaged app (open 10 GB file, search, follow);
   - assemble release: installers + `SHA256SUMS` + release notes → **upload to GitHub Releases**
     as artifacts.
@@ -365,8 +365,8 @@ settings + highlighters windows, Dock icon) plus a Windows + Linux spot-check be
   filtering is introduced anywhere.
 - **Windows** — register a shell verb on `HKCU\Software\Classes\*\shell\Loggi` (any file
   type, no admin needed): command → `"<install>\Loggi.exe" "%1"`. Registration happens on
-  first run (and re-registered on locale change), since jpackage MSI custom actions for
-  per-user registry writes are fragile. **i18n**: the verb display name is written from the
+  first run (and re-registered on locale change), since jpackage's per-machine registry
+  writes need admin. **i18n**: the verb display name is written from the
   current UI locale (EN "Open with Loggi" / zh-Hans "使用 Loggi 打开"); re-run on locale
   switch updates it (string pairs already exist in `i18n/Strings.kt`).
 - **macOS** — `CFBundleDocumentTypes` in `Info.plist` with `LSItemContentTypes =

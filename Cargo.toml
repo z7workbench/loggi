@@ -9,7 +9,9 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.0"
+# Cargo requires full semver (x.y.z); the displayed/packaged version trims
+# trailing ".0" components (see desktopApp/build.gradle.kts trimVersion).
+version = "1.0.0"
 edition = "2024"
 license = "MIT"
 

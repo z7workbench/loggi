@@ -13,9 +13,10 @@ git checkout main
 git pull --rebase
 # (bump workspace.version in Cargo.toml + commit, if not done)
 
-# 2. Tag with semver.
-git tag -a v0.2.0 -m "v0.2.0"
-git push origin v0.2.0
+# 2. Tag with semver (short form — the workflow trims trailing zero
+#    components, so v1.0 matches Cargo's 1.0.0).
+git tag -a v1.0 -m "v1.0"
+git push origin v1.0
 
 # 3. The release workflow takes it from there: matrix build, package every
 #    target format, sign/notarize where the secrets are wired, upload to
@@ -26,7 +27,7 @@ git push origin v0.2.0
 
 `.github/workflows/release.yml` fires on any of:
 
-1. **Tag push** — `git tag -a v0.2.0 -m "v0.2.0" && git push origin v0.2.0`.
+1. **Tag push** — `git tag -a v1.0 -m "v1.0" && git push origin v1.0`.
    The CI-friendly path; the tag is the only input, the body is
    auto-generated.
 2. **GitHub Release published** — `Releases > New release > Publish` in the
@@ -38,20 +39,21 @@ git push origin v0.2.0
    re-running a build (e.g. when the signing secrets rotated) without
    bumping the version.
 
-In all three cases the tag (e.g. `v0.2.0`) drives the package version
-(`-Ploggi.version=0.2.0`).
+In all three cases the tag (e.g. `v1.0`) drives the package version
+(`-Ploggi.version=1.0`). The Cargo workspace version is full semver
+(`1.0.0`); the workflow trims trailing zero components so tags and
+installers use the short form `1.0`.
 
 ## What gets built
 
 The matrix job runs on `ubuntu-latest`, `macos-latest`, `windows-latest`.
 Each runner builds the release JNI cdylib (`-Ploggi.jni.profile=release`),
 then assembles the native installers via `gradlew :desktopApp:packageDmg |
-packageMsi | packageDeb | packageRpm` (with `packagePkg` / `packageExe`
-as best-effort).
+packageExe | packageDeb | packageRpm` (with `packagePkg` as best-effort).
 
 | OS | Formats |
 |---|---|
-| Windows | `.msi` (per-user, dirChooser) + `.exe` best-effort |
+| Windows | `.exe` (NSIS) |
 | macOS | `.dmg` + `.pkg` |
 | Linux | `.deb` (Ubuntu/Debian) + `.rpm` (RHEL/Fedora/SUSE) |
 
@@ -65,7 +67,7 @@ host loads, the index path works, and the search returns matches.
 | OS | Tool | When wired |
 |---|---|---|
 | macOS | `codesign` (Developer ID) + `notarytool` | when `MACOS_SIGNING_IDENTITY`, `MACOS_SIGNING_KEYCHAIN`, `MACOS_NOTARIZATION_PROFILE` secrets are set on the runner; otherwise the build is unsigned and notarization is skipped (the build still runs and produces the `.dmg` so unsigned local installs are possible). |
-| Windows | `signtool` (Authenticode) | when `WINDOWS_SIGNTOOL_PATH` + cert secrets are present; otherwise the `.msi` is unsigned. |
+| Windows | `signtool` (Authenticode) | when `WINDOWS_SIGNTOOL_PATH` + cert secrets are present; otherwise the `.exe` is unsigned. |
 | Linux | (no signing required) | `.deb` / `.rpm` are signed only if the runner has GPG / RPM-signing keychain, which the default runner does not. |
 
 The gradle DSL only enables signing when the matching env vars are set
@@ -100,7 +102,7 @@ uploaded artifact and the **release** job stitches the results into a single
 - [ ] Spot-check the `SHA256SUMS`.
 - [ ] On macOS, verify the `.dmg` is signed + notarized (Gatekeeper accepts
       it on a clean install).
-- [ ] On Windows, verify the `.msi` is signed (SmartScreen / Authenticode
+- [ ] On Windows, verify the `.exe` is signed (SmartScreen / Authenticode
       report).
 - [ ] On Linux, install the `.deb` and `.rpm` and confirm Loggi launches.
 - [ ] Run the full smoke pass on at least one OS (open a 10 GiB log,

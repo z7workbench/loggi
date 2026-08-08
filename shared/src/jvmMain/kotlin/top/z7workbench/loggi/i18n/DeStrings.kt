@@ -77,6 +77,8 @@ class DeStrings : Strings() {
     override val aboutTitle = "Über Loggi"
     override fun aboutText(engineVersion: String) =
         "Loggi – ein Log-Viewer für sehr große Dateien.\nEngine: $engineVersion"
+    override val aboutVersionLabel = "Version"
+    override val aboutLicense = "Lizenz: MIT"
     override val customColorTitle = "Benutzerdefinierte Farbe"
     override val openWithLoggi = "Mit Loggi öffnen"
     override val dropToOpen = "Dateien hier loslassen, um sie zu öffnen"

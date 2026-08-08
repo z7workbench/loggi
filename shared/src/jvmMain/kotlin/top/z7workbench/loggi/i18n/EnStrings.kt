@@ -77,6 +77,8 @@ class EnStrings : Strings() {
     override val aboutTitle = "About Loggi"
     override fun aboutText(engineVersion: String) =
         "Loggi — a log viewer for very large files.\nEngine: $engineVersion"
+    override val aboutVersionLabel = "Version"
+    override val aboutLicense = "License: MIT"
     override val customColorTitle = "Custom Color"
     override val openWithLoggi = "Open with Loggi"
     override val dropToOpen = "Drop files here to open them"

@@ -64,12 +64,15 @@ perf gates), `docs/release.md` (M10 release process), and
 Pre-built installers for every supported OS family are published on the
 [Releases](https://github.com/z7workbench/loggi/releases/latest) page.
 Each installer bundles the JRE and the JNI cdylib; icons come from
-`packaging/`.
+`packaging/`. The app icon was generated with
+[icon.kitchen](https://icon.kitchen) and is used by the installers, the
+About window and the `loggi_icon` drawable in
+`shared/src/commonMain/composeResources/`.
 
 | OS | Formats |
 |---|---|
 | macOS | `.dmg` (drag-to-Applications), `.pkg` |
-| Windows | `.msi` (per-user, dirChooser) |
+| Windows | `.exe` (NSIS) |
 | Linux | `.deb` (Ubuntu/Debian), `.rpm` (RHEL/Fedora/SUSE) |
 
 macOS and Windows installers register **"Open with Loggi"** for any
@@ -137,14 +140,14 @@ Use the release Rust profile so the bundled engine is optimized:
 ./gradlew :desktopApp:packagePkg -Ploggi.jni.profile=release
 
 # Windows (on a Windows host) / Debian & RPM (on a Linux host)
-./gradlew :desktopApp:packageMsi -Ploggi.jni.profile=release
+./gradlew :desktopApp:packageExe -Ploggi.jni.profile=release
 ./gradlew :desktopApp:packageDeb -Ploggi.jni.profile=release
 ./gradlew :desktopApp:packageRpm -Ploggi.jni.profile=release
 ```
 
 M11: every installer registers "Open with Loggi" for any file extension.
 The verb is wired through `jpackage` (`Info.plist` on macOS, the
-MSI-installed `.desktop` MimeType on Linux) and re-registered at runtime
+Deb/Rpm-installed `.desktop` MimeType on Linux) and re-registered at runtime
 in the active UI locale (Windows per-user registry entry + Linux
 `~/.local/share/applications/loggi-user.desktop`). Files can also be
 dropped onto the app window from Finder / Explorer / Nautilus — each

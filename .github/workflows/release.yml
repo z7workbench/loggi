@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to release (e.g. v0.2.0). Leave blank to use the latest tag in the repo."
+        description: "Tag to release (e.g. v1.0). Leave blank to use the latest tag in the repo."
         required: false
 
 permissions:
@@ -32,6 +32,10 @@ jobs:
   verify:
     name: Verify tag matches workspace version
     runs-on: ubuntu-latest
+    outputs:
+      name: ${{ steps.tag.outputs.name }}
+      cargo: ${{ steps.ver.outputs.cargo }}
+      version: ${{ steps.norm.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -66,12 +70,22 @@ jobs:
         run: |
           VER=$(grep -E '^version\s*=\s*"[^"]+"' Cargo.toml | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
           echo "cargo=$VER" >> "$GITHUB_OUTPUT"
+      - name: Normalize release version
+        id: norm
+        run: |
+          CARGO="${{ steps.ver.outputs.cargo }}"
+          # Cargo needs full semver ("1.0.0") but the release version is the
+          # short form ("1.0"): trim trailing zero components for tags,
+          # artifact names, the jpackage version and the About window.
+          TRIMMED=$(printf '%s' "$CARGO" | awk -F. '{ while (NF > 2 && $NF == 0) NF--; print }')
+          echo "version=$TRIMMED" >> "$GITHUB_OUTPUT"
+          echo "release version: $TRIMMED (cargo: $CARGO)"
       - name: Verify tag matches
         run: |
           TAG="${{ steps.tag.outputs.name }}"
-          CARGO="${{ steps.ver.outputs.cargo }}"
-          if [ "${TAG#v}" != "${CARGO}" ]; then
-            echo "::error::Tag ${TAG} does not match Cargo workspace version ${CARGO}"
+          VERSION="${{ steps.norm.outputs.version }}"
+          if [ "${TAG#v}" != "${VERSION}" ]; then
+            echo "::error::Tag ${TAG} does not match release version ${VERSION}"
             exit 1
           fi
       - name: Lint
@@ -88,19 +102,19 @@ jobs:
         include:
           - os: macos-latest
             format: dmg
-            artifact: Loggi-${{ needs.verify.outputs.cargo }}-macos-x64.dmg
+            artifact: Loggi-${{ needs.verify.outputs.version }}-macos-x64.dmg
           - os: macos-latest
             format: pkg
-            artifact: Loggi-${{ needs.verify.outputs.cargo }}-macos-x64.pkg
+            artifact: Loggi-${{ needs.verify.outputs.version }}-macos-x64.pkg
           - os: windows-latest
-            format: msi
-            artifact: Loggi-${{ needs.verify.outputs.cargo }}-windows-x64.msi
+            format: exe
+            artifact: Loggi-${{ needs.verify.outputs.version }}-windows-x64.exe
           - os: ubuntu-latest
             format: deb
-            artifact: Loggi-${{ needs.verify.outputs.cargo }}-linux-x64.deb
+            artifact: Loggi-${{ needs.verify.outputs.version }}-linux-x64.deb
           - os: ubuntu-latest
             format: rpm
-            artifact: Loggi-${{ needs.verify.outputs.cargo }}-linux-x64.rpm
+            artifact: Loggi-${{ needs.verify.outputs.version }}-linux-x64.rpm
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -124,7 +138,7 @@ jobs:
           ./gradlew
           :desktopApp:package${{ matrix.format }}
           -Ploggi.jni.profile=release
-          -Ploggi.version=${{ needs.verify.outputs.cargo }}
+          -Ploggi.version=${{ needs.verify.outputs.version }}
           --console=plain
       - name: Locate installer
         id: locate
@@ -205,7 +219,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const ver = '${{ needs.verify.outputs.cargo }}';
+            const ver = '${{ needs.verify.outputs.version }}';
             let notes = `## loggi ${ver}\n\n`;
             try {
               const prs = await github.paginate(gitHub.rest.pulls.list, {
@@ -222,15 +236,15 @@ jobs:
             }
             notes += '\n### Installers\n';
             notes += '- macOS: `*.dmg` / `*.pkg`\n';
-            notes += '- Windows: `*.msi` (per-user install)\n';
+            notes += '- Windows: `*.exe` (NSIS)\n';
             notes += '- Linux: `*.deb` (Ubuntu/Debian), `*.rpm` (RHEL/Fedora/SUSE)\n';
             notes += '\nVerify with `SHA256SUMS`.\n';
             await fs.writeFile('RELEASE_BODY.md', notes);
       - name: Create / update release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ needs.verify.outputs.tag }}
-          name: "loggi ${{ needs.verify.outputs.cargo }}"
+          tag_name: ${{ needs.verify.outputs.name }}
+          name: "loggi ${{ needs.verify.outputs.version }}"
           # Preserve the body the user wrote in the GitHub Release UI when
           # the trigger was `release: published`; only auto-generate one for
           # the tag-push / dispatch path where no release body exists yet.
@@ -239,9 +253,9 @@ jobs:
           files: |
             release-assets/*.dmg
             release-assets/*.pkg
-            release-assets/*.msi
+            release-assets/*.exe
             release-assets/*.deb
             release-assets/*.rpm
             release-assets/SHA256SUMS
           draft: false
-          prerelease: ${{ contains(needs.verify.outputs.cargo, '-') }}
+          prerelease: ${{ contains(needs.verify.outputs.version, '-') }}

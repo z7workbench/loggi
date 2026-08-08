@@ -60,12 +60,15 @@ Linux 原生安装程序。
 
 每个支持平台都有预编译安装包，发布在
 [Releases](https://github.com/z7workbench/loggi/releases/latest) 页面。
-安装包捆绑了 JRE 与 JNI cdylib；图标取自 `packaging/`。
+安装包捆绑了 JRE 与 JNI cdylib；图标取自 `packaging/`。应用图标由
+[icon.kitchen](https://icon.kitchen) 网站生成，安装包、关于窗口以及
+`shared/src/commonMain/composeResources/` 里的 `loggi_icon` 资源均使用
+该图标。
 
 | 操作系统 | 安装包格式 |
 |---|---|
 | macOS | `.dmg`（拖入 Applications）、`.pkg` |
-| Windows | `.msi`（每用户安装，可选目录） |
+| Windows | `.exe`（NSIS） |
 | Linux | `.deb`（Ubuntu/Debian）、`.rpm`（RHEL/Fedora/SUSE） |
 
 macOS 与 Windows 的安装包会注册任意文件扩展名的**「使用 Loggi 打开」**
@@ -134,13 +137,13 @@ Rust 配置以获得优化的内置引擎：
 ./gradlew :desktopApp:packagePkg -Ploggi.jni.profile=release
 
 # Windows（在 Windows 主机上）/ Debian & RPM（在 Linux 主机上）
-./gradlew :desktopApp:packageMsi -Ploggi.jni.profile=release
+./gradlew :desktopApp:packageExe -Ploggi.jni.profile=release
 ./gradlew :desktopApp:packageDeb -Ploggi.jni.profile=release
 ./gradlew :desktopApp:packageRpm -Ploggi.jni.profile=release
 ```
 
 M11：每个安装程序都会为任意文件扩展名注册「使用 Loggi 打开」。
-macOS 走 `jpackage` 的 `Info.plist`，Linux 走 MSI 安装的 `.desktop`
+macOS 走 `jpackage` 的 `Info.plist`，Linux 走 Deb/Rpm 安装的 `.desktop`
 MimeType，Windows 走运行时的当前 UI 语言下注册（每用户注册表项 +
 Linux 的 `~/.local/share/applications/loggi-user.desktop`）。
 也可以把文件从 Finder / 资源管理器 / Nautilus 直接拖放到应用窗口，

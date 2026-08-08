@@ -27,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import top.z7workbench.loggi.engine.EngineFile
 import top.z7workbench.loggi.i18n.LocalStrings
 import top.z7workbench.loggi.vm.ColorPickerRequest
 import top.z7workbench.loggi.vm.FileTab
@@ -96,17 +95,6 @@ fun RenameDialog(tab: FileTab, onDismiss: () -> Unit) {
             }) { Text(strings.okButton) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(strings.cancelButton) } },
-    )
-}
-
-@Composable
-fun AboutDialog(onDismiss: () -> Unit) {
-    val strings = LocalStrings.current
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(strings.aboutTitle) },
-        text = { Text(strings.aboutText(EngineFile.engineVersion())) },
-        confirmButton = { TextButton(onClick = onDismiss) { Text(strings.okButton) } },
     )
 }
 

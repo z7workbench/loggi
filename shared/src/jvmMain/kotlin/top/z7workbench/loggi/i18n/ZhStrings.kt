@@ -77,6 +77,8 @@ class ZhStrings : Strings() {
     override val aboutTitle = "关于 Loggi"
     override fun aboutText(engineVersion: String) =
         "Loggi —— 面向超大文件的日志查看器。\n引擎：$engineVersion"
+    override val aboutVersionLabel = "版本"
+    override val aboutLicense = "许可证：MIT"
     override val customColorTitle = "自定义颜色"
     override val openWithLoggi = "使用 Loggi 打开"
     override val dropToOpen = "松开以打开文件"
