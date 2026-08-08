@@ -135,5 +135,8 @@ Search history is global and persisted in `loggi.conf`
 (`ui/SearchHistoryWindow.kt` deletes entries / clears all); tap-to-clear is
 primary-button-only, so right-click keeps the drag selection for highlight.
 
-Remaining milestones: M9 (perf & memory hardening), M10 (packaging/release
-signing).
+Remaining milestones: M9 (perf & memory hardening), M10 (packaging/release:
+Dmg/Msi/Deb/**Rpm** installers, signing, release CI uploading artifacts to
+GitHub Releases), M11 (OS integration: `loggi <file>` CLI entry, "Open with
+Loggi"/"使用 Loggi 打开" right-click verb for any file extension with i18n —
+see `docs/PLAN.md`).

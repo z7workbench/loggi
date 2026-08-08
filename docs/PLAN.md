@@ -334,17 +334,54 @@ settings + highlighters windows, Dock icon) plus a Windows + Linux spot-check be
 - Acceptance: soak runs clean (no monotonic RSS growth); perf gates green; documented
   `docs/perf.md` with numbers and decisions.
 
-### M10 — Packaging & release
-- Build pipelines per OS producing installers: macOS `.dmg` (+ `.pkg`), Windows `.msi` via
-  jpackage (+ NSIS alternative), Linux `.deb`, `.rpm`, AppImage; icons, file-association
-  (`.log`), menu entries; bundle the Rust cdylib inside the app image.
-- Code signing: macOS notarization, Windows Authenticode (documented, best-effort in CI with
-  secrets), Linux signing best-effort.
-- Release workflow: tag → CI matrix builds → installer artifacts → GitHub Releases with
-  checksums + release notes; smoke tests per OS (open 10 GB file, search, follow) executed in CI.
-- Versioning: semver; changelog.
-- Acceptance: fresh installers on all 3 OSes open a 10 GB file and pass the smoke list; a
-  release artifact set (3 OS families) produced by one command/one tag.
+### M10 — Packaging & release (installers + signing + release CI)
+- Installer targets per OS (JDK `jpackage`, `-Ploggi.jni.profile=release`, icons from
+  `packaging/`):
+  - macOS: `.dmg` (+ `.pkg` best-effort);
+  - Windows: `.msi` (+ `.exe` via NSIS best-effort);
+  - Linux: `.deb` (Ubuntu/Debian), `.rpm` (RHEL/Fedora/SUSE — **new**, jpackage supports
+    `TargetFormat.Rpm`), AppImage best-effort.
+  - The Rust cdylib is already bundled inside the jar resources and extracted at runtime —
+    verify it lands inside the app image on all targets.
+- Menu entries + app registration: macOS `CFBundleDisplayName`, Windows Start-menu shortcut,
+  Linux `.desktop` file (icons already per-OS). (File *association* is M11.)
+- Code signing: macOS notarization (Developer ID + stapler), Windows Authenticode
+  (documented, best-effort in CI with secrets), Linux signing best-effort.
+- **Release CI** (`release.yml`, new): triggers on tag push (`v*`); jobs:
+  - matrix build (ubuntu/macos/windows) → `packageDmg|Msi|Deb|Rpm` with release JNI profile;
+  - per-OS smoke tests on the packaged app (open 10 GB file, search, follow);
+  - assemble release: installers + `SHA256SUMS` + release notes → **upload to GitHub Releases**
+    as artifacts.
+- Versioning: semver derived from the tag; changelog (`docs/release.md`).
+- Acceptance: one tag produces a release with installer artifact sets for all OS families
+  (Windows, macOS, Ubuntu, RHEL); each installer opens a 10 GB file and passes the smoke list.
+
+### M11 — OS integration: "Open with Loggi" (file association, i18n)
+- **Command-line entry point**: `loggi <file>` — `main.kt` reads `args` and opens the first
+  file argument (multiple args → one tab each) via `AppViewModel.openFile`. This is the
+  foundation for every "open with" path below.
+- **Any extension**: already true in-app (AWT `FileDialog` has no extension filter; engine has
+  no extension restriction) — M11 only adds the OS-level entry points; no new file-type
+  filtering is introduced anywhere.
+- **Windows** — register a shell verb on `HKCU\Software\Classes\*\shell\Loggi` (any file
+  type, no admin needed): command → `"<install>\Loggi.exe" "%1"`. Registration happens on
+  first run (and re-registered on locale change), since jpackage MSI custom actions for
+  per-user registry writes are fragile. **i18n**: the verb display name is written from the
+  current UI locale (EN "Open with Loggi" / zh-Hans "使用 Loggi 打开"); re-run on locale
+  switch updates it (string pairs already exist in `i18n/Strings.kt`).
+- **macOS** — `CFBundleDocumentTypes` in `Info.plist` with `LSItemContentTypes =
+  [public.data]` (covers every extension; UTIs remain dynamic so arbitrary extensions work);
+  LaunchServices then offers Loggi under Finder's "Open With" automatically (the menu title
+  is OS-localized, App display name = localized `CFBundleDisplayName`). Verify open-at-launch
+  via `NSApplicationDelegate` (jpackage-generated `main` passes the file path as argv —
+  covered by the M11 command-line entry point).
+- **Linux** — `.desktop` file with `MimeType=text/plain;text/x-log;application/x-log;
+  text/*;application/octet-stream;` + `xdg-mime default` registration in the package
+  postinst; file managers show Loggi under "Open With Other Application" for any file.
+  **i18n**: `.desktop` `Name` / `Name[zh_CN]` keys.
+- Acceptance: on each OS, right-click any file → Loggi appears (Windows verb "使用 Loggi
+  打开"/"Open with Loggi"; macOS Open With; Linux Open With); launching opens the file in a
+  tab; locale switch re-registers the Windows verb in the other language.
 
 ---
 
@@ -424,7 +461,7 @@ crates/
 
 ```
 M0 ─▶ M1 ─▶ M2 ─▶ M3 ─▶ M4 ─┐
-                              ├─▶ M5 ─▶ M6 ─▶ M7 ─▶ M8 ─▶ M8.5 ─▶ M9 ─▶ M10
+                              ├─▶ M5 ─▶ M6 ─▶ M7 ─▶ M8 ─▶ M8.5 ─▶ M9 ─▶ M10 ─▶ M11
 (M0..M4 pure Rust, verifiable   │
  via CLI + bench; M5+ UI)       │
 UI work can start at M5 with   ▼
