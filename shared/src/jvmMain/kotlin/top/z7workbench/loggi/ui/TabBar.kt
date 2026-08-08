@@ -144,9 +144,13 @@ private fun TabChip(app: AppViewModel, tab: FileTab, index: Int, vertical: Boole
                 }
                 .pointerInput(tab) {
                     // Left click activates, middle click closes, right click opens the menu.
+                    // Presses consumed by a descendant (the "×" close button) are skipped,
+                    // otherwise clicking "×" would re-activate the tab that was just
+                    // removed and the main view would keep showing it (ghost tab).
                     while (true) {
                         val event = awaitPointerEventScope { awaitPointerEvent() }
                         if (event.type != PointerEventType.Press) continue
+                        if (event.changes.first().isConsumed) continue
                         val buttons = event.buttons
                         when {
                             buttons.isTertiaryPressed -> app.closeTab(tab)
@@ -200,9 +204,12 @@ private fun TabChip(app: AppViewModel, tab: FileTab, index: Int, vertical: Boole
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
                         .pointerInput(tab) {
+                            // Close on primary press; consume so the parent chip's
+                            // press handler doesn't re-activate the removed tab.
                             while (true) {
                                 val event = awaitPointerEventScope { awaitPointerEvent() }
                                 if (event.type == PointerEventType.Press && event.buttons.isPrimaryPressed) {
+                                    event.changes.forEach { it.consume() }
                                     app.closeTab(tab)
                                 }
                             }

@@ -108,6 +108,9 @@ abstract class Strings {
     // OS integration (M11) — "Open with Loggi" shell verb / Open With menu
     abstract val openWithLoggi: String
 
+    // File drag & drop onto the window
+    abstract val dropToOpen: String
+
     // Settings dialog
     abstract val settingsTitle: String
     abstract val sectionAppearance: String

@@ -79,6 +79,7 @@ class EnStrings : Strings() {
         "Loggi — a log viewer for very large files.\nEngine: $engineVersion"
     override val customColorTitle = "Custom Color"
     override val openWithLoggi = "Open with Loggi"
+    override val dropToOpen = "Drop files here to open them"
 
     override val settingsTitle = "Settings"
     override val sectionAppearance = "Appearance"

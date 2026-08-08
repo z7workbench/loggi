@@ -43,7 +43,9 @@ macOS, and Linux.
   drag-selection copy, text highlighting, pinned lines, light/dark themes with
   nine color schemes (violet/blue/teal/green/orange/amber/rose/slate/indigo),
   6-locale i18n (EN, zh-Hans, zh-Hant, FR, DE, RU),
-  `loggi.conf` session persistence, minimap overview strip. Rust interop is JNI
+  `loggi.conf` session persistence, minimap overview strip, file drag & drop
+  from the OS file manager (drop any file onto the window to open it). Rust
+  interop is JNI
   (`crates/engine-jni` cdylib; UniFFI was considered and rejected for hot-buffer control —
   see `docs/PLAN.md` §2).
 
@@ -144,7 +146,9 @@ M11: every installer registers "Open with Loggi" for any file extension.
 The verb is wired through `jpackage` (`Info.plist` on macOS, the
 MSI-installed `.desktop` MimeType on Linux) and re-registered at runtime
 in the active UI locale (Windows per-user registry entry + Linux
-`~/.local/share/applications/loggi-user.desktop`). See
+`~/.local/share/applications/loggi-user.desktop`). Files can also be
+dropped onto the app window from Finder / Explorer / Nautilus — each
+dropped regular file opens in its own tab. See
 `docs/release.md` for the matrix build + signing flow.
 
 Settings live in `loggi.conf` next to the working directory when present (portable mode),

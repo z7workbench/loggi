@@ -79,6 +79,7 @@ class ZhHantStrings : Strings() {
         "Loggi —— 面向超大檔案的日誌檢視器。\n引擎：$engineVersion"
     override val customColorTitle = "自訂顏色"
     override val openWithLoggi = "使用 Loggi 開啟"
+    override val dropToOpen = "放開以開啟檔案"
 
     override val settingsTitle = "設定"
     override val sectionAppearance = "外觀"

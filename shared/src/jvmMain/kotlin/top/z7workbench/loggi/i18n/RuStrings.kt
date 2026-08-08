@@ -79,6 +79,7 @@ class RuStrings : Strings() {
         "Loggi — просмотрщик журналов для очень больших файлов.\nДвижок: $engineVersion"
     override val customColorTitle = "Свой цвет"
     override val openWithLoggi = "Открыть с помощью Loggi"
+    override val dropToOpen = "Отпустите файлы, чтобы открыть их"
 
     override val settingsTitle = "Настройки"
     override val sectionAppearance = "Внешний вид"

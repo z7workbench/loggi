@@ -79,6 +79,7 @@ class FrStrings : Strings() {
         "Loggi — un visionneur de journaux pour très gros fichiers.\nMoteur : $engineVersion"
     override val customColorTitle = "Couleur personnalisée"
     override val openWithLoggi = "Ouvrir avec Loggi"
+    override val dropToOpen = "Déposez des fichiers ici pour les ouvrir"
 
     override val settingsTitle = "Paramètres"
     override val sectionAppearance = "Apparence"

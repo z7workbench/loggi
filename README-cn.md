@@ -42,7 +42,8 @@ Linux 原生安装程序。
   （水平或垂直）、拖拽选择复制、文本高亮、固定行、明暗主题 + 九种
   配色方案（紫罗兰 / 蓝 / 青 / 绿 / 橙 / 琥珀 / 玫红 / 石墨 / 靛蓝）、
   六语言界面（英 / 简中 / 繁中 / 法 / 德 / 俄）、
-  界面、`loggi.conf` 会话持久化、迷你概览条。Rust 互操作走 JNI
+  `loggi.conf` 会话持久化、迷你概览条、从系统文件管理器拖放文件
+  （把任意文件拖到窗口即可打开）。Rust 互操作走 JNI
   （`crates/engine-jni` cdylib；曾评估 UniFFI，因热缓冲区控制需求而
   放弃——见 `docs/PLAN.md` §2）。
 
@@ -142,6 +143,8 @@ M11：每个安装程序都会为任意文件扩展名注册「使用 Loggi 打�
 macOS 走 `jpackage` 的 `Info.plist`，Linux 走 MSI 安装的 `.desktop`
 MimeType，Windows 走运行时的当前 UI 语言下注册（每用户注册表项 +
 Linux 的 `~/.local/share/applications/loggi-user.desktop`）。
+也可以把文件从 Finder / 资源管理器 / Nautilus 直接拖放到应用窗口，
+每个拖入的普通文件都会在独立标签页中打开。
 矩阵构建与签名流程见 `docs/release.md`。
 
 设置保存在 `loggi.conf` 中：工作目录下存在时使用便携模式，否则使用

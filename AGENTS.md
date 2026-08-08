@@ -210,3 +210,13 @@ shows up under right-click for any file extension on every OS:
 Verb display name is localized (`Open with Loggi` / `使用 Loggi 打开`).
 See `shared/.../os/FileAssociation.kt` + JVM tests in
 `shared/src/jvmTest/.../os/FileAssociationTest.kt`.
+
+File drag & drop (Finder / Explorer / Nautilus): a `Modifier.dragAndDropTarget`
+on the root `Surface` accepts OS file-list drags through Compose's own DnD
+pipeline (the framework owns the native `DropTarget` on the window — a
+separate AWT `DropTarget` is shadowed by it and never fires), filters to
+regular files (`droppedFilePaths` in `App.kt`, covered by
+`shared/src/jvmTest/.../FileDropTest.kt`) and opens each in its own tab
+via `AppViewModel.openFile`; directories are skipped. While a file drag
+hovers the window, a localized full-window hint (`Strings.dropToOpen`,
+all 6 locales) is shown.

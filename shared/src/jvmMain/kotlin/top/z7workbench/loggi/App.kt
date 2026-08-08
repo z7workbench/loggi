@@ -1,6 +1,7 @@
 package top.z7workbench.loggi
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -23,12 +25,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draganddrop.DragAndDropEvent
+import androidx.compose.ui.draganddrop.DragAndDropTarget
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,6 +46,10 @@ import androidx.compose.ui.window.MenuBar
 import androidx.compose.ui.window.Window
 import java.awt.FileDialog
 import java.awt.Frame
+import java.awt.datatransfer.DataFlavor
+import java.awt.dnd.DropTargetDragEvent
+import java.awt.dnd.DropTargetDropEvent
+import java.io.File
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -75,6 +86,7 @@ import top.z7workbench.loggi.vm.TabState
 @Composable
 fun FrameWindowScope.App(app: AppViewModel, onExit: () -> Unit) {
     val strings = remember(app.settings.locale) { app.strings }
+    val dragActive = remember { mutableStateOf(false) }
     CompositionLocalProvider(
         LocalStrings provides strings,
         LocalColorPickerHost provides { req -> app.colorPicker = req },
@@ -87,30 +99,114 @@ fun FrameWindowScope.App(app: AppViewModel, onExit: () -> Unit) {
             // the readable foreground instead of falling back to Color.Black
             // (which is what made the log view's main line text invisible in
             // dark mode).
+            // The dragAndDropTarget modifier runs on Compose's own DnD
+            // pipeline (the window's native DropTarget is managed by the
+            // framework), which is the only path that receives OS file drags
+            // (Finder / Explorer / Nautilus) — an additional AWT DropTarget
+            // is shadowed by it and never fires.
             Surface(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .dragAndDropTarget(
+                        shouldStartDragAndDrop = { event -> event.isFileListDrag() },
+                        target = remember { FileListDropTarget({ paths -> paths.forEach(app::openFile) }, dragActive) },
+                    ),
                 color = MaterialTheme.colorScheme.background,
                 contentColor = MaterialTheme.colorScheme.onBackground,
             ) {
-                Column(Modifier.fillMaxSize()) {
-                    Toolbar(app)
-                    Row(Modifier.weight(1f)) {
-                        if (app.settings.tabPlacement == TabPlacement.VERTICAL) {
-                            TabBar(app, onNewTab = { chooseFiles().forEach(app::openFile) })
-                        }
-                        Column(Modifier.weight(1f)) {
-                            if (app.settings.tabPlacement == TabPlacement.HORIZONTAL) {
+                Box(Modifier.fillMaxSize()) {
+                    Column(Modifier.fillMaxSize()) {
+                        Toolbar(app)
+                        Row(Modifier.weight(1f)) {
+                            if (app.settings.tabPlacement == TabPlacement.VERTICAL) {
                                 TabBar(app, onNewTab = { chooseFiles().forEach(app::openFile) })
                             }
-                            Box(Modifier.weight(1f)) { ActiveTabContent(app) }
+                            Column(Modifier.weight(1f)) {
+                                if (app.settings.tabPlacement == TabPlacement.HORIZONTAL) {
+                                    TabBar(app, onNewTab = { chooseFiles().forEach(app::openFile) })
+                                }
+                                Box(Modifier.weight(1f)) { ActiveTabContent(app) }
+                            }
                         }
+                        StatusBar(app)
                     }
-                    StatusBar(app)
+                    if (dragActive.value) DropOverlay(strings.dropToOpen)
                 }
             }
             AppDialogs(app)
             DetachedSearchWindow(app)
             FollowTicker(app)
+        }
+    }
+}
+
+/**
+ * OS file drag & drop (Finder / Explorer / Nautilus): every dropped regular
+ * file opens in its own tab via [onFiles] (directories are skipped). The
+ * overlay [active] shows while a file drag hovers the window. Runs on the
+ * Compose DnD pipeline, where the native AWT drop event is exposed through
+ * [DragAndDropEvent.nativeEvent].
+ */
+@OptIn(ExperimentalComposeUiApi::class)
+private class FileListDropTarget(
+    private val onFiles: (List<String>) -> Unit,
+    private val active: MutableState<Boolean>,
+) : DragAndDropTarget {
+    override fun onEntered(event: DragAndDropEvent) {
+        if (event.isFileListDrag()) active.value = true
+    }
+
+    override fun onExited(event: DragAndDropEvent) {
+        active.value = false
+    }
+
+    override fun onDrop(event: DragAndDropEvent): Boolean {
+        active.value = false
+        val native = event.nativeEvent as? DropTargetDropEvent ?: return false
+        val paths = try {
+            droppedFilePaths(native.transferable.getTransferData(DataFlavor.javaFileListFlavor))
+        } catch (_: Exception) {
+            emptyList()
+        }
+        if (paths.isNotEmpty()) onFiles(paths)
+        return true
+    }
+}
+
+/** True when the native AWT event carries an OS file list. */
+@OptIn(ExperimentalComposeUiApi::class)
+private fun DragAndDropEvent.isFileListDrag(): Boolean = when (val native = nativeEvent) {
+    is DropTargetDragEvent -> native.isDataFlavorSupported(DataFlavor.javaFileListFlavor)
+    is DropTargetDropEvent -> native.isDataFlavorSupported(DataFlavor.javaFileListFlavor)
+    else -> false
+}
+
+/** Absolute paths of the dropped entries that are regular files (dirs skipped). */
+internal fun droppedFilePaths(data: Any?): List<String> {
+    val entries = data as? List<*> ?: return emptyList()
+    return entries.filterIsInstance<File>().filter { it.isFile }.map { it.absolutePath }
+}
+
+/** Full-window hint shown while a file drag hovers the window. */
+@Composable
+private fun DropOverlay(text: String) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.primaryContainer,
+            shadowElevation = 6.dp,
+        ) {
+            Text(
+                text,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 14.dp),
+            )
         }
     }
 }
@@ -273,7 +369,7 @@ private fun ActiveTabContent(app: AppViewModel) {
             }
         }
 
-        is TabState.Ready -> MainContent(app, st.vm)
+        is TabState.Ready -> key(st.vm) { MainContent(app, st.vm) }
     }
 }
 
