@@ -14,7 +14,7 @@ import top.z7workbench.loggi.vm.FileViewModel
  * the log view and the results pane.
  */
 @Composable
-fun rememberAnnotatedLine(vm: FileViewModel, raw: String): AnnotatedString {
+fun rememberAnnotatedLine(vm: FileViewModel, line: Long, raw: String): AnnotatedString {
     val settings = vm.app.settings
     val spans = remember(
         raw,
@@ -25,7 +25,7 @@ fun rememberAnnotatedLine(vm: FileViewModel, raw: String): AnnotatedString {
         settings.searchMatchColorArgb,
         settings.searchMatchWholeLine,
     ) {
-        vm.computeLineSpans(raw)
+        vm.computeLineSpans(line, raw)
     }
     val tabStop = if (settings.expandTabs) settings.tabStop else 0
     return remember(raw, spans, tabStop) {

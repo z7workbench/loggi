@@ -58,7 +58,11 @@ windows-latest / macos-latest / ubuntu-latest.
   composables.
 - UI density: chrome/menus/settings use the compact controls in `ui/Compact.kt` (stock M3
   padding only inside modal dialogs); fonts resolve via `ui/Fonts.kt` (generic aliases +
-  Skia-enumerated system families).
+  Skia-enumerated system families). Dropdown/popup menus use `CompactDropdownMenu` (exact
+  anchor-below positioning) — not M3 `DropdownMenu`, whose 48 dp `MenuVerticalMargin`
+  pushes popups away from anchors near the window top (toolbar, tab bar, first log rows).
+- Fonts: `fontFamily` = log-view font (default Monospace), `uiFontFamily` = UI font
+  (default `System` = OS default UI font, applied via `LoggiTheme` typography).
 - JNI bridge rules:
   - thin only — no engine logic in `engine-jni`;
   - long operations never run on the UI thread (use `Dispatchers.Default`);
@@ -102,8 +106,10 @@ pins), search bar + streaming results with history, three layouts
 (side/top/detached search window) with persisted splitter, tabs (close /
 close-others / left / right / all, middle-click close, drag reorder,
 horizontal/vertical placement, rename, copy path, open folder), display
-settings (font size, line spacing, wrap, tab stop; font family via generic
-aliases + Skia-enumerated system families), themes (follow system / force light / force dark, live
+settings (font size, line spacing, wrap, tab stop; log font family via generic
+aliases + Skia-enumerated system families; separate UI font family for the
+whole interface, defaulting to the OS font, applied through the theme
+typography), themes (follow system / force light / force dark, live
 OS listener via skiko polling), i18n EN + zh-Hans via `i18n/Strings.kt` (a
 reflection test asserts the zh-Hans override is complete; switch is live),
 `loggi.conf` persistence + session restore, minimap overview strip. Pins are
@@ -127,9 +133,18 @@ out to be a real bug — the results LazyColumn never invalidated because
 `ResultsModel.size` was a plain getter (snapshot state now) — fixed and
 covered by Compose UI tests (`SearchPaneUiTest`); a manual run pass on the
 3 OSes gates M9. The context menu (`ui/LineContextMenu.kt`) is shared by
-both panes (copy / copy lines / `name:line` reference / highlight / pin,
-submenu opens on hover) and anchored via a zero-size padding-placed box —
-CMP's DropdownMenu `DpOffset` is mis-scaled on HiDPI. Main-view blanking
+both panes (copy / copy lines / `name:line` reference / highlight — its
+hover submenu also holds remove-highlight — / remove-all / pin) and
+anchored via a zero-size padding-placed box — CMP's DropdownMenu `DpOffset`
+is mis-scaled on HiDPI. All dropdowns/context menus render through
+`CompactDropdownMenu` (`ui/Compact.kt`): M3's `DropdownMenu` refuses to
+place a popup within 48 dp of the window top (`MenuVerticalMargin`), which
+detached the toolbar layout menu from its button and pushed the highlight
+submenu off its row; the replacement anchors popup top/left exactly to the
+anchor (submenu: row top-end corner), covered by
+`LogViewUiTest.contextMenuOpensAtCursor` / `highlightSubmenuAlignsWithParentRow`
+and `CompactControlsUiTest.dropdownOpensFlushBelowAnchorAtWindowTop`. Main-view
+blanking
 from results-pane chunk churn is fixed (LRU touch + re-ensure on version).
 Search history is global and persisted in `loggi.conf`
 (`ui/SearchHistoryWindow.kt` deletes entries / clears all); tap-to-clear is

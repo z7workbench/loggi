@@ -21,7 +21,6 @@ import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -78,14 +77,13 @@ fun SearchPane(vm: FileViewModel, modifier: Modifier = Modifier) {
                 modifier = Modifier.weight(1f),
             )
             var historyOpen by remember { mutableStateOf(false) }
-            Box {
+            Box(Modifier.padding(start = 4.dp)) {
                 CompactButton(
                     text = "▾",
                     onClick = { historyOpen = true },
-                    modifier = Modifier.padding(start = 4.dp),
                     enabled = vm.app.searchHistory.isNotEmpty(),
                 )
-                DropdownMenu(expanded = historyOpen, onDismissRequest = { historyOpen = false }) {
+                CompactDropdownMenu(expanded = historyOpen, onDismissRequest = { historyOpen = false }) {
                     vm.app.searchHistory.forEach { past ->
                         CompactMenuItem(
                             text = past,
@@ -254,7 +252,7 @@ private fun ResultRow(vm: FileViewModel, index: Int) {
             )
             if (raw != null) {
                 Text(
-                    text = rememberAnnotatedLine(vm, raw),
+                    text = rememberAnnotatedLine(vm, line, raw),
                     fontFamily = fontFamily,
                     fontSize = settings.fontSizeSp.sp,
                     maxLines = 1,

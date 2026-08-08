@@ -162,12 +162,22 @@ class AppViewModel(
         settings = transform(settings)
     }
 
-    fun addHighlighter(rule: HighlighterRule) {
-        updateSettings { it.copy(highlighters = it.highlighters + rule) }
+    fun addHighlighter(rule: HighlighterRule) = addHighlighters(listOf(rule))
+
+    /** Add several rules in one settings update (single recomposition + save). */
+    fun addHighlighters(rules: List<HighlighterRule>) {
+        if (rules.isEmpty()) return
+        updateSettings { it.copy(highlighters = it.highlighters + rules) }
     }
 
     fun removeHighlighter(index: Int) {
         updateSettings { it.copy(highlighters = it.highlighters.filterIndexed { i, _ -> i != index }) }
+    }
+
+    /** Drop every highlighter rule (context menu "remove all highlights"). */
+    fun clearHighlighters() {
+        if (settings.highlighters.isEmpty()) return
+        updateSettings { it.copy(highlighters = emptyList()) }
     }
 
     fun pushSearchHistory(pattern: String) {

@@ -66,6 +66,7 @@ abstract class Strings {
     abstract val ctxUnpin: String
     abstract val unpinAllLabel: String
     abstract val ctxRemoveHighlighter: String
+    abstract val ctxRemoveAllHighlights: String
 
     // Status / misc
     abstract val followButton: String
@@ -73,6 +74,7 @@ abstract class Strings {
     abstract fun statusSize(bytes: Long): String
     abstract val lineTooLongPlaceholder: String
     abstract val copyTruncatedWarning: String
+    abstract val highlightTruncatedWarning: String
     abstract val noFileOpen: String
 
     // Open / indexing
@@ -101,6 +103,8 @@ abstract class Strings {
     abstract val languageSystem: String
     abstract val sectionDisplay: String
     abstract val fontFamilyLabel: String
+    abstract val uiFontFamilyLabel: String
+    abstract val fontSystemDefault: String
     abstract val fontSizeLabel: String
     abstract val lineHeightLabel: String
     abstract val wrapLabel: String
@@ -123,6 +127,7 @@ abstract class Strings {
     abstract val highlightersTitle: String
     abstract val highlighterAddLabel: String
     abstract val highlighterPatternPlaceholder: String
+    abstract fun anchoredHighlightLabel(line: Long): String
 }
 
 class EnStrings : Strings() {
@@ -178,6 +183,7 @@ class EnStrings : Strings() {
     override val ctxUnpin = "Unpin Line(s)"
     override val unpinAllLabel = "Unpin All"
     override val ctxRemoveHighlighter = "Remove Highlight"
+    override val ctxRemoveAllHighlights = "Remove All Highlights"
 
     override val followButton = "Follow"
     override fun statusLineCount(count: Long) = "$count lines"
@@ -194,6 +200,7 @@ class EnStrings : Strings() {
     }
     override val lineTooLongPlaceholder = "<line exceeds the 8 MiB display budget>"
     override val copyTruncatedWarning = "Selection too large; copied the first part only"
+    override val highlightTruncatedWarning = "Selection too large; highlighted the first part only"
     override val noFileOpen = "Open a log file to begin (File → Open…)"
 
     override fun openingFile(name: String) = "Opening $name"
@@ -221,7 +228,9 @@ class EnStrings : Strings() {
     override val languageLabel = "Language"
     override val languageSystem = "System default"
     override val sectionDisplay = "Display"
-    override val fontFamilyLabel = "Font family"
+    override val fontFamilyLabel = "Log font"
+    override val uiFontFamilyLabel = "UI font"
+    override val fontSystemDefault = "System default"
     override val fontSizeLabel = "Font size"
     override val lineHeightLabel = "Line spacing"
     override val wrapLabel = "Wrap long lines"
@@ -244,6 +253,7 @@ class EnStrings : Strings() {
     override val highlightersTitle = "Highlighters"
     override val highlighterAddLabel = "Add rule"
     override val highlighterPatternPlaceholder = "Pattern (plain text or regex)"
+    override fun anchoredHighlightLabel(line: Long) = "Line $line:"
 }
 
 class ZhStrings : Strings() {
@@ -299,6 +309,7 @@ class ZhStrings : Strings() {
     override val ctxUnpin = "取消固定"
     override val unpinAllLabel = "取消全部固定"
     override val ctxRemoveHighlighter = "移除高亮"
+    override val ctxRemoveAllHighlights = "取消所有高光"
 
     override val followButton = "跟随"
     override fun statusLineCount(count: Long) = "$count 行"
@@ -315,6 +326,7 @@ class ZhStrings : Strings() {
     }
     override val lineTooLongPlaceholder = "<该行超过 8 MiB 显示上限>"
     override val copyTruncatedWarning = "选区过大，仅复制了前一部分"
+    override val highlightTruncatedWarning = "选区过大，仅高亮前一部分"
     override val noFileOpen = "打开一个日志文件开始（文件 → 打开…）"
 
     override fun openingFile(name: String) = "正在打开 $name"
@@ -342,7 +354,9 @@ class ZhStrings : Strings() {
     override val languageLabel = "语言"
     override val languageSystem = "系统默认"
     override val sectionDisplay = "显示"
-    override val fontFamilyLabel = "字体"
+    override val fontFamilyLabel = "日志字体"
+    override val uiFontFamilyLabel = "界面字体"
+    override val fontSystemDefault = "系统默认"
     override val fontSizeLabel = "字号"
     override val lineHeightLabel = "行距"
     override val wrapLabel = "长行自动换行"
@@ -365,6 +379,7 @@ class ZhStrings : Strings() {
     override val highlightersTitle = "高亮规则"
     override val highlighterAddLabel = "添加规则"
     override val highlighterPatternPlaceholder = "匹配内容（纯文本或正则）"
+    override fun anchoredHighlightLabel(line: Long) = "第 $line 行："
 }
 
 enum class AppLocale { EN, ZH }

@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -51,6 +50,7 @@ import top.z7workbench.loggi.theme.LoggiTheme
 import top.z7workbench.loggi.ui.AboutDialog
 import top.z7workbench.loggi.ui.ColorPickerDialog
 import top.z7workbench.loggi.ui.CompactButton
+import top.z7workbench.loggi.ui.CompactDropdownMenu
 import top.z7workbench.loggi.ui.CompactMenuItem
 import top.z7workbench.loggi.ui.GoToLineDialog
 import top.z7workbench.loggi.ui.HighlightersWindow
@@ -61,6 +61,7 @@ import top.z7workbench.loggi.ui.SearchHistoryWindow
 import top.z7workbench.loggi.ui.SearchPane
 import top.z7workbench.loggi.ui.SettingsWindow
 import top.z7workbench.loggi.ui.TabBar
+import top.z7workbench.loggi.ui.rememberUiFontFamily
 import top.z7workbench.loggi.vm.AppViewModel
 import top.z7workbench.loggi.vm.FileTab
 import top.z7workbench.loggi.vm.FileViewModel
@@ -77,7 +78,7 @@ fun FrameWindowScope.App(app: AppViewModel, onExit: () -> Unit) {
         LocalStrings provides strings,
         LocalColorPickerHost provides { req -> app.colorPicker = req },
     ) {
-        LoggiTheme(app.settings.themeMode) {
+        LoggiTheme(app.settings.themeMode, rememberUiFontFamily(app.settings.uiFontFamily)) {
             AppMenuBar(app, onExit)
             Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                 Toolbar(app)
@@ -126,14 +127,13 @@ private fun Toolbar(app: AppViewModel) {
             modifier = Modifier.padding(start = 4.dp),
             selected = app.settings.wrapLines,
         )
-        Box {
+        Box(Modifier.padding(start = 4.dp)) {
             var layoutOpen by remember { mutableStateOf(false) }
             CompactButton(
                 "${strings.layoutLabel}  ▾",
                 onClick = { layoutOpen = true },
-                modifier = Modifier.padding(start = 4.dp),
             )
-            DropdownMenu(expanded = layoutOpen, onDismissRequest = { layoutOpen = false }) {
+            CompactDropdownMenu(expanded = layoutOpen, onDismissRequest = { layoutOpen = false }) {
                 listOf(
                     SearchLayout.BOTTOM to strings.menuLayoutBottom,
                     SearchLayout.SIDE to strings.menuLayoutSide,

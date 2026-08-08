@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -40,7 +39,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.awt.Desktop
@@ -181,10 +179,9 @@ private fun TabChip(app: AppViewModel, tab: FileTab, index: Int, vertical: Boole
                     .padding(start = with(density) { menuAt.x.toDp() }, top = with(density) { menuAt.y.toDp() })
                     .size(0.dp),
             ) {
-                DropdownMenu(
+                CompactDropdownMenu(
                     expanded = true,
                     onDismissRequest = { contextMenuAt = null },
-                    offset = DpOffset.Zero,
                 ) {
                     CompactMenuItem(text = strings.tabClose, onClick = {
                         contextMenuAt = null

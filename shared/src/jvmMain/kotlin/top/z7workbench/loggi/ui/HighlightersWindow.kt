@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -109,34 +110,51 @@ private fun HighlighterRow(
                 .background(Color(rule.colorArgb), RoundedCornerShape(4.dp))
                 .clickable { picker(ColorPickerRequest(rule.colorArgb) { picked -> onChange(rule.copy(colorArgb = picked)) }) },
         )
-        CompactSearchField(
-            value = rule.pattern,
-            onValueChange = { onChange(rule.copy(pattern = it)) },
-            placeholder = strings.highlighterPatternPlaceholder,
-            isError = rule.regex && rule.pattern.isNotEmpty() && runCatching { Regex(rule.pattern) }.isFailure,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(),
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 6.dp),
-        )
-        CompactButton(
-            text = strings.ignoreCaseLabel,
-            selected = rule.ignoreCase,
-            onClick = { onChange(rule.copy(ignoreCase = !rule.ignoreCase)) },
-        )
-        CompactButton(
-            text = strings.regexLabel,
-            selected = rule.regex,
-            onClick = { onChange(rule.copy(regex = !rule.regex)) },
-            modifier = Modifier.padding(start = 4.dp),
-        )
-        CompactButton(
-            text = strings.wholeLineLabel,
-            selected = rule.wholeLine,
-            onClick = { onChange(rule.copy(wholeLine = !rule.wholeLine)) },
-            modifier = Modifier.padding(start = 4.dp),
-        )
+        if (rule.anchorLine != null) {
+            // Line-anchored selection highlight: the range is fixed, so the
+            // pattern is a read-only preview; only color / removal apply.
+            Text(
+                strings.anchoredHighlightLabel(rule.anchorLine + 1),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(horizontal = 6.dp),
+            )
+            Text(
+                rule.pattern,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f).padding(horizontal = 6.dp),
+            )
+        } else {
+            CompactSearchField(
+                value = rule.pattern,
+                onValueChange = { onChange(rule.copy(pattern = it)) },
+                placeholder = strings.highlighterPatternPlaceholder,
+                isError = rule.regex && rule.pattern.isNotEmpty() && runCatching { Regex(rule.pattern) }.isFailure,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 6.dp),
+            )
+            CompactButton(
+                text = strings.ignoreCaseLabel,
+                selected = rule.ignoreCase,
+                onClick = { onChange(rule.copy(ignoreCase = !rule.ignoreCase)) },
+            )
+            CompactButton(
+                text = strings.regexLabel,
+                selected = rule.regex,
+                onClick = { onChange(rule.copy(regex = !rule.regex)) },
+                modifier = Modifier.padding(start = 4.dp),
+            )
+            CompactButton(
+                text = strings.wholeLineLabel,
+                selected = rule.wholeLine,
+                onClick = { onChange(rule.copy(wholeLine = !rule.wholeLine)) },
+                modifier = Modifier.padding(start = 4.dp),
+            )
+        }
         Text(
             "×",
             color = MaterialTheme.colorScheme.error,

@@ -22,6 +22,14 @@ data class HighlighterRule(
     val regex: Boolean = false,
     /** Tint the whole log line instead of just the matched text. */
     val wholeLine: Boolean = false,
+    /**
+     * Line-anchored selection highlight (multi-line selections): tint exactly
+     * [anchorStart, anchorEnd) (raw char indices) on [anchorLine] only. When
+     * set, [pattern] is kept as a display preview and no matching runs.
+     */
+    val anchorLine: Long? = null,
+    val anchorStart: Int = -1,
+    val anchorEnd: Int = -1,
 )
 
 @Serializable
@@ -41,6 +49,8 @@ data class AppSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val locale: LocaleSetting = LocaleSetting.SYSTEM,
     val fontFamily: String = FONT_MONOSPACE,
+    /** UI font family; [FONT_SYSTEM] = the OS default UI font. */
+    val uiFontFamily: String = FONT_SYSTEM,
     val fontSizeSp: Float = 13f,
     val lineHeightFactor: Float = 1.2f,
     val wrapLines: Boolean = false,
@@ -66,6 +76,8 @@ data class AppSettings(
         const val FONT_MONOSPACE = "Monospace"
         const val FONT_SANS_SERIF = "SansSerif"
         const val FONT_SERIF = "Serif"
+        /** Sentinel UI font family: use the OS default UI font. */
+        const val FONT_SYSTEM = "System"
         val FONT_FAMILIES = listOf(FONT_MONOSPACE, FONT_SANS_SERIF, FONT_SERIF)
 
         val DEFAULT_PRESETS = listOf(

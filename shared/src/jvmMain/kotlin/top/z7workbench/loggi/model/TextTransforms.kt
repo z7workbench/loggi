@@ -39,6 +39,38 @@ fun expandTabsRemap(
 }
 
 /**
+ * Map a display (tab-expanded) range back to raw char indices — the inverse
+ * of [expandTabsRemap]'s span mapping, for line-anchored selection
+ * highlights. A boundary that falls inside a tab's expansion snaps to the
+ * tab itself (the whole tab is then included).
+ */
+fun displayRangeToRaw(raw: String, tabStop: Int, displayStart: Int, displayEnd: Int): LineSpan {
+    if (tabStop <= 0 || raw.indexOf('\t') < 0) {
+        return LineSpan(displayStart.coerceIn(0, raw.length), displayEnd.coerceIn(0, raw.length))
+    }
+    val map = IntArray(raw.length + 1)
+    var col = 0
+    raw.forEachIndexed { i, c ->
+        map[i] = col
+        col += if (c == '\t') tabStop - col % tabStop else 1
+    }
+    map[raw.length] = col
+    // Raw index of the char whose expansion covers display position `dp`
+    // (floor: the largest raw index with map[i] <= dp).
+    fun rawOf(dp: Int): Int {
+        val target = dp.coerceIn(0, col)
+        var lo = 0
+        var hi = raw.length
+        while (lo < hi) {
+            val mid = (lo + hi + 1) ushr 1
+            if (map[mid] <= target) lo = mid else hi = mid - 1
+        }
+        return lo
+    }
+    return LineSpan(rawOf(displayStart), rawOf(displayEnd))
+}
+
+/**
  * Convert UTF-8 byte offsets (as returned by the engine matcher for the
  * UTF-8 encoding of [text]) to UTF-16 char indices of [text].
  */

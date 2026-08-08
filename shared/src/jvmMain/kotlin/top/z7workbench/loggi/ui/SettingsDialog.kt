@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -90,9 +89,18 @@ fun SettingsWindow(app: AppViewModel, onDismiss: () -> Unit) {
                     ),
                     selected = settings.locale,
                 ) { loc -> app.updateSettings { it.copy(locale = loc) } }
+                FontFamilyRow(
+                    label = strings.uiFontFamilyLabel,
+                    current = settings.uiFontFamily,
+                    families = pickableUiFontFamilies,
+                ) { name -> app.updateSettings { it.copy(uiFontFamily = name) } }
 
                 Section(strings.sectionDisplay)
-                FontFamilyRow(app, settings)
+                FontFamilyRow(
+                    label = strings.fontFamilyLabel,
+                    current = settings.fontFamily,
+                    families = pickableFontFamilies,
+                ) { name -> app.updateSettings { it.copy(fontFamily = name) } }
                 SpinnerRow(
                     label = strings.fontSizeLabel,
                     value = settings.fontSizeSp,
@@ -178,22 +186,28 @@ fun SettingsWindow(app: AppViewModel, onDismiss: () -> Unit) {
     }
 }
 
-/** System font families (Skia FontMgr enumeration) behind a compact dropdown. */
+/** Font family picker behind a compact dropdown ([AppSettings.FONT_SYSTEM] shows localized). */
 @Composable
-private fun FontFamilyRow(app: AppViewModel, settings: AppSettings) {
+private fun FontFamilyRow(
+    label: String,
+    current: String,
+    families: List<String>,
+    onSelect: (String) -> Unit,
+) {
     val strings = LocalStrings.current
+    fun display(name: String) = if (name == AppSettings.FONT_SYSTEM) strings.fontSystemDefault else name
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 3.dp)) {
-        Text(strings.fontFamilyLabel, fontSize = 13.sp, modifier = Modifier.width(110.dp))
+        Text(label, fontSize = 13.sp, modifier = Modifier.width(110.dp))
         Box {
             var open by remember { mutableStateOf(false) }
-            CompactButton(text = "${settings.fontFamily}  ▾", onClick = { open = true })
-            DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-                pickableFontFamilies.forEach { name ->
+            CompactButton(text = "${display(current)}  ▾", onClick = { open = true })
+            CompactDropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+                families.forEach { name ->
                     CompactMenuItem(
-                        text = name,
+                        text = display(name),
                         onClick = {
                             open = false
-                            app.updateSettings { it.copy(fontFamily = name) }
+                            onSelect(name)
                         },
                     )
                 }

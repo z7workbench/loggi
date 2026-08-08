@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,7 +22,6 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import top.z7workbench.loggi.i18n.LocalStrings
@@ -34,7 +32,8 @@ import top.z7workbench.loggi.vm.LinePos
 /**
  * Shared right-click context menu for one log line (main view + results
  * pane): copy selection / copy lines / copy file:line reference, highlight
- * (the submenu opens on hover, no click needed), pin/unpin.
+ * (the submenu opens on hover, no click needed, and also holds "remove
+ * highlight"), pin/unpin.
  *
  * [position] is the click point in pixels, relative to the layout this
  * composable is declared in. Positioning uses a zero-size anchor box moved
@@ -69,12 +68,13 @@ fun LogLineContextMenu(
     Box(
         Modifier
             .padding(start = with(density) { position.x.toDp() }, top = with(density) { position.y.toDp() })
-            .size(0.dp),
+            .size(0.dp)
+            .testTag("ctxMenuAnchor"),
     ) {
-        DropdownMenu(
+        CompactDropdownMenu(
             expanded = true,
             onDismissRequest = { close() },
-            offset = DpOffset.Zero,
+            modifier = Modifier.testTag("ctxMenu"),
         ) {
             CompactMenuItem(
                 text = strings.ctxCopy,
@@ -106,14 +106,17 @@ fun LogLineContextMenu(
                 CompactMenuItem(
                     text = "${strings.ctxHighlight}  ▸",
                     onClick = { highlightSubMenu = true },
-                    modifier = Modifier.onPointerEvent(PointerEventType.Enter) { highlightSubMenu = true },
+                    modifier = Modifier
+                        .testTag("hlMenu")
+                        .onPointerEvent(PointerEventType.Enter) { highlightSubMenu = true },
                 )
-                // Submenu anchored to the item's right edge.
-                Box(Modifier.align(Alignment.CenterEnd)) {
-                    DropdownMenu(
+                // Submenu anchored at the row's top-end corner so the popup's
+                // top edge aligns with the "Highlight" row's top edge.
+                Box(Modifier.align(Alignment.TopEnd)) {
+                    CompactDropdownMenu(
                         expanded = highlightSubMenu,
                         onDismissRequest = { highlightSubMenu = false },
-                        offset = DpOffset.Zero,
+                        modifier = Modifier.testTag("hlSubMenu"),
                     ) {
                         vm.app.settings.highlightPresets.forEach { argb ->
                             CompactMenuCustom(
@@ -135,9 +138,27 @@ fun LogLineContextMenu(
                                 }
                             },
                         )
+                        HorizontalDivider()
+                        CompactMenuItem(
+                            text = strings.ctxRemoveHighlighter,
+                            enabled = vm.canRemoveHighlightFor(linePos),
+                            onClick = {
+                                close()
+                                scope.launch { vm.removeHighlightForSelection(linePos) }
+                            },
+                        )
                     }
                 }
             }
+            CompactMenuItem(
+                text = strings.ctxRemoveAllHighlights,
+                enabled = vm.app.settings.highlighters.isNotEmpty(),
+                onClick = {
+                    close()
+                    vm.app.clearHighlighters()
+                },
+                modifier = Modifier.onPointerEvent(PointerEventType.Enter) { highlightSubMenu = false },
+            )
             CompactMenuItem(
                 text = if (pinned) strings.ctxUnpin else strings.ctxPin,
                 onClick = {

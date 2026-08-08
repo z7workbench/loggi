@@ -18,6 +18,7 @@ import top.z7workbench.loggi.model.ChunkCache
 import top.z7workbench.loggi.model.LineSpan
 import top.z7workbench.loggi.model.ResultsModel
 import top.z7workbench.loggi.model.byteSpansToCharSpans
+import top.z7workbench.loggi.model.displayRangeToRaw
 import top.z7workbench.loggi.model.expandTabsRemap
 import top.z7workbench.loggi.settings.HighlighterRule
 import top.z7workbench.loggi.settings.TabSession
@@ -296,24 +297,82 @@ class FileViewModel(
     }
 
     /**
-     * Add a highlighter from the context menu: with a single-line text
-     * selection the selected text becomes a substring highlighter; otherwise
-     * the right-clicked line's full text becomes a whole-line highlighter.
+     * Add highlighters from the context menu:
+     * - single-line text selection → a substring highlighter of that text;
+     * - multi-line selection → one line-anchored rule per covered line,
+     *   tinting exactly the framed range: the first line from the selection
+     *   start to its end, the last line from its start to the selection end,
+     *   and every fully covered line in between (capped for perf);
+     * - no selection → the right-clicked line's full text becomes a
+     *   whole-line highlighter.
      */
     fun addHighlighterAt(linePos: LinePos, colorArgb: Long) {
         scope.launch(Dispatchers.Default) {
-            val selected = selectedText()
-            val pattern: String
-            val wholeLine: Boolean
-            if (selected != null) {
-                pattern = selected
-                wholeLine = false
-            } else {
-                pattern = chunks.loadLine(linePos.line)?.takeIf { it.isNotEmpty() } ?: return@launch
-                wholeLine = true
+            val sel = selection
+            val multiLine = sel != null && !sel.isEmpty() && sel.start.line != sel.end.line
+            if (multiLine) {
+                // An anchored rule per covered line, tinting exactly the
+                // framed range: first line from the selection start, last
+                // line up to the selection end, full lines in between.
+                val first = sel.start.line
+                val last = sel.end.line
+                val capped = minOf(last, first + MAX_HIGHLIGHT_LINES)
+                val rules = ArrayList<HighlighterRule>()
+                val tabStop = effectiveTabStop()
+                for (line in first..capped) {
+                    val raw = chunks.loadLine(line)?.takeIf { it.isNotEmpty() } ?: continue
+                    val display = expandTabsRemap(raw, tabStop, emptyList()).first
+                    val ds = if (line == first) sel.start.col.coerceIn(0, display.length) else 0
+                    val de = if (line == last) sel.end.col.coerceIn(0, display.length) else display.length
+                    if (de <= ds) continue
+                    val (rs, re) = displayRangeToRaw(raw, tabStop, ds, de)
+                    if (re <= rs) continue
+                    rules.add(
+                        HighlighterRule(
+                            pattern = display.substring(ds, de),
+                            colorArgb = colorArgb,
+                            ignoreCase = false,
+                            regex = false,
+                            wholeLine = false,
+                            anchorLine = line,
+                            anchorStart = rs,
+                            anchorEnd = re,
+                        ),
+                    )
+                }
+                app.addHighlighters(rules)
+                if (capped < last) statusMessage = app.strings.highlightTruncatedWarning
+                return@launch
             }
-            app.addHighlighter(
-                HighlighterRule(pattern = pattern, colorArgb = colorArgb, ignoreCase = false, regex = false, wholeLine = wholeLine),
+            // Single-line selection → substring highlighter of the selected text.
+            val selected = selectedText()
+            if (selected != null) {
+                app.addHighlighters(
+                    listOf(
+                        HighlighterRule(
+                            pattern = selected,
+                            colorArgb = colorArgb,
+                            ignoreCase = false,
+                            regex = false,
+                            wholeLine = false,
+                        ),
+                    ),
+                )
+                return@launch
+            }
+            // No usable selection → the right-clicked line's full text becomes
+            // a whole-line highlighter.
+            val text = chunks.loadLine(linePos.line)?.takeIf { it.isNotEmpty() } ?: return@launch
+            app.addHighlighters(
+                listOf(
+                    HighlighterRule(
+                        pattern = text,
+                        colorArgb = colorArgb,
+                        ignoreCase = false,
+                        regex = false,
+                        wholeLine = true,
+                    ),
+                ),
             )
         }
     }
@@ -321,17 +380,84 @@ class FileViewModel(
     // ---- highlighting -------------------------------------------------------------
 
     /**
-     * Highlight spans (display coordinates) for one visible line: user
-     * highlighters in order (later wins), search matches on top. Cheap enough
-     * for the visible set (~50 lines); matching runs in the engine.
+     * Whether the context-menu "remove highlight" action has anything to
+     * remove: a non-empty selection whose rules exist, or anchored /
+     * whole-line rules on [linePos.line]. Best-effort (chunk data may be
+     * unavailable when the menu opens).
      */
-    fun computeLineSpans(text: String): List<ColoredSpan> {
+    fun canRemoveHighlightFor(linePos: LinePos): Boolean {
+        val rules = app.settings.highlighters
+        if (rules.isEmpty()) return false
+        val sel = selection
+        if (sel == null || sel.isEmpty()) {
+            val text = lineText(linePos.line)
+            return rules.any { it.anchorLine == linePos.line || (it.wholeLine && text != null && it.pattern == text) }
+        }
+        val range = sel.start.line..sel.end.line
+        if (rules.any { it.anchorLine != null && it.anchorLine in range }) return true
+        if (sel.start.line == sel.end.line) {
+            val selected = selectedText() ?: return false
+            return rules.any { it.anchorLine == null && it.pattern == selected }
+        }
+        return false
+    }
+
+    /**
+     * Remove the highlight of the current selection, or of the right-clicked
+     * line when there is no selection: anchored rules on the covered lines,
+     * plus the substring rule matching a single-line selection and the
+     * whole-line rule matching a line's full text.
+     */
+    fun removeHighlightForSelection(linePos: LinePos) {
+        scope.launch(Dispatchers.Default) {
+            val sel = selection
+            val rules = app.settings.highlighters
+            if (rules.isEmpty()) return@launch
+            val keep = ArrayList<HighlighterRule>(rules.size)
+            for (rule in rules) {
+                val covered = if (sel != null && !sel.isEmpty()) {
+                    val range = sel.start.line..sel.end.line
+                    rule.anchorLine != null && rule.anchorLine in range
+                } else {
+                    rule.anchorLine == linePos.line
+                }
+                if (covered) continue
+                val patternMatch = when {
+                    sel != null && !sel.isEmpty() && sel.start.line == sel.end.line -> {
+                        val selected = selectedText()
+                        rule.anchorLine == null && selected != null && rule.pattern == selected
+                    }
+                    sel == null || sel.isEmpty() -> {
+                        val text = chunks.loadLine(linePos.line)
+                        rule.wholeLine && text != null && rule.pattern == text
+                    }
+                    else -> false
+                }
+                if (!patternMatch) keep.add(rule)
+            }
+            if (keep.size != rules.size) app.updateSettings { it.copy(highlighters = keep) }
+        }
+    }
+
+    /**
+     * Highlight spans (raw char indices) for one visible line: user
+     * highlighters in order (later wins), search matches on top. Line-anchored
+     * selection rules tint their stored range directly; pattern rules are
+     * matched by the engine. Cheap enough for the visible set (~50 lines).
+     */
+    fun computeLineSpans(line: Long, text: String): List<ColoredSpan> {
         val rules = app.settings.highlighters
         val search = searchPattern
         if (rules.isEmpty() && search.isBlank()) return emptyList()
         val utf8 = text.toByteArray(Charsets.UTF_8)
         val out = ArrayList<ColoredSpan>()
         for (rule in rules) {
+            if (rule.anchorLine != null) {
+                if (rule.anchorLine == line) {
+                    out.add(ColoredSpan(LineSpan(rule.anchorStart, rule.anchorEnd), Color(rule.colorArgb)))
+                }
+                continue
+            }
             if (rule.pattern.isEmpty()) continue
             val flat = runCatching {
                 engine.matchPositions(rule.pattern, rule.ignoreCase, rule.regex, utf8)
@@ -374,5 +500,7 @@ class FileViewModel(
         private const val SEARCH_DRAIN_CAPACITY = 8192
         private const val COPY_CHAR_CAP = 20_000_000
         private const val MAX_PIN_RANGE = 10_000L
+        /** Cap whole-line highlighters from one multi-line selection (each is re-matched per visible line). */
+        private const val MAX_HIGHLIGHT_LINES = 200L
     }
 }

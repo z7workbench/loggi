@@ -71,6 +71,9 @@ private class LogMetrics(
     val wrap: Boolean,
 )
 
+/** "0"s measured together; dividing averages out the per-char pixel rounding. */
+private const val CHAR_WIDTH_SAMPLE = 256
+
 @Composable
 private fun rememberLogMetrics(vm: FileViewModel, lineCount: Long): LogMetrics {
     val settings = vm.app.settings
@@ -81,7 +84,11 @@ private fun rememberLogMetrics(vm: FileViewModel, lineCount: Long): LogMetrics {
     val lineHeight = fontSize * settings.lineHeightFactor
     val charWidth = remember(fontFamily, fontSize, density) {
         val style = TextStyle(fontFamily = fontFamily, fontSize = fontSize.sp)
-        measurer.measure("0", style).size.width.toFloat().coerceAtLeast(1f)
+        // A single "0" measures as a whole pixel (ceil), e.g. 9 px for an
+        // 8.04 px advance — one char too wide. Measure a run and divide so
+        // the column grid matches the rendered glyphs.
+        val sample = "0".repeat(CHAR_WIDTH_SAMPLE)
+        (measurer.measure(sample, style).size.width / CHAR_WIDTH_SAMPLE.toFloat()).coerceAtLeast(1f)
     }
     val gutterDigits = maxOf(4, lineCount.toString().length)
     return remember(fontFamily, fontSize, lineHeight, charWidth, gutterDigits, settings.wrapLines, density) {
@@ -304,7 +311,7 @@ private fun LogLineItem(vm: FileViewModel, line: Long, metrics: LogMetrics) {
     val chunkLoaded = remember(vm.chunks.version, line) { vm.chunks.hasChunk(line) }
     val pinned = remember(vm.results.version, line) { vm.results.isPinned(line) }
     val isCurrent = vm.currentLine == line
-    val annotated: AnnotatedString? = raw?.let { rememberAnnotatedLine(vm, it) }
+    val annotated: AnnotatedString? = raw?.let { rememberAnnotatedLine(vm, line, it) }
     val displayLen = annotated?.length ?: 0
 
     // Selection column range for this line.
@@ -359,6 +366,10 @@ private fun LogLineItem(vm: FileViewModel, line: Long, metrics: LogMetrics) {
                     fontFamily = metrics.fontFamily,
                     fontSize = metrics.fontSizeSp.sp,
                     lineHeight = metrics.lineHeightSp.sp,
+                    // Override the M3 default letter spacing (0.5 sp): the
+                    // column grid assumes a fixed per-char advance, so the
+                    // rendered text must not add spacing between glyphs.
+                    letterSpacing = 0.sp,
                     softWrap = metrics.wrap,
                     maxLines = if (metrics.wrap) Int.MAX_VALUE else 1,
                     overflow = TextOverflow.Ellipsis,

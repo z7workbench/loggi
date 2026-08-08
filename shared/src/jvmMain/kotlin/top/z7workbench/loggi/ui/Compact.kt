@@ -7,16 +7,23 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,10 +36,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupPositionProvider
+import androidx.compose.ui.window.PopupProperties
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
@@ -67,7 +84,8 @@ fun CompactSearchField(
         value = value,
         onValueChange = onValueChange,
         singleLine = true,
-        textStyle = TextStyle(fontSize = 13.sp, color = scheme.onSurface),
+        // Inherit the themed UI font family; only size/color are overridden.
+        textStyle = LocalTextStyle.current.merge(TextStyle(fontSize = 13.sp, color = scheme.onSurface)),
         cursorBrush = SolidColor(scheme.primary),
         interactionSource = interactionSource,
         keyboardOptions = keyboardOptions,
@@ -170,6 +188,81 @@ fun CompactMenuCustom(onClick: () -> Unit, modifier: Modifier = Modifier, conten
 }
 
 /**
+ * Anchored dropdown menu with the compact item density. Material3's
+ * `DropdownMenu` refuses to place a popup within 48 dp of the window edges
+ * (`MenuVerticalMargin`), so menus anchored near the window top (toolbar,
+ * tab bar, right-click on the first log rows) jump away from their anchor.
+ * This replacement always opens with its top edge at the anchor's bottom
+ * edge (start-aligned), flipping above the anchor only when the space below
+ * does not fit, and keeping a small 4 dp margin to the window edges.
+ */
+@Composable
+fun CompactDropdownMenu(
+    expanded: Boolean,
+    onDismissRequest: () -> Unit,
+    modifier: Modifier = Modifier,
+    offset: DpOffset = DpOffset.Zero,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    if (!expanded) return
+    val density = LocalDensity.current
+    val provider = remember(offset, density) { AnchorMenuPositionProvider(offset, density) }
+    Popup(
+        popupPositionProvider = provider,
+        onDismissRequest = onDismissRequest,
+        properties = PopupProperties(focusable = true),
+    ) {
+        Surface(
+            modifier = modifier,
+            shape = MenuDefaults.shape,
+            color = MenuDefaults.containerColor,
+            tonalElevation = MenuDefaults.TonalElevation,
+            shadowElevation = MenuDefaults.ShadowElevation,
+        ) {
+            Column(
+                Modifier
+                    .width(IntrinsicSize.Max)
+                    .verticalScroll(rememberScrollState())
+                    .padding(vertical = 8.dp),
+                content = content,
+            )
+        }
+    }
+}
+
+/** Exact anchor-below positioning for [CompactDropdownMenu] (see its doc). */
+private class AnchorMenuPositionProvider(
+    private val contentOffset: DpOffset,
+    private val density: Density,
+) : PopupPositionProvider {
+    override fun calculatePosition(
+        anchorBounds: IntRect,
+        windowSize: IntSize,
+        layoutDirection: LayoutDirection,
+        popupContentSize: IntSize,
+    ): IntOffset {
+        val margin = with(density) { 4.dp.roundToPx() }
+        val offsetX = with(density) { contentOffset.x.roundToPx() }
+        val offsetY = with(density) { contentOffset.y.roundToPx() }
+        val maxX = (windowSize.width - margin - popupContentSize.width).coerceAtLeast(margin)
+        val x = if (layoutDirection == LayoutDirection.Ltr) {
+            (anchorBounds.left + offsetX).coerceIn(margin, maxX)
+        } else {
+            (anchorBounds.right - popupContentSize.width - offsetX).coerceIn(margin, maxX)
+        }
+        val below = anchorBounds.bottom + offsetY
+        val above = anchorBounds.top - offsetY - popupContentSize.height
+        val maxY = (windowSize.height - margin - popupContentSize.height).coerceAtLeast(margin)
+        val y = when {
+            below + popupContentSize.height <= windowSize.height - margin -> below
+            above >= margin -> above
+            else -> maxY
+        }
+        return IntOffset(x, y)
+    }
+}
+
+/**
  * Numeric field with spinner buttons: type a value and commit with Enter or
  * focus loss, or nudge with ▲▼. Values are clamped to [range] and rounded to
  * [decimals] places. Used by settings for font size, line spacing, tab stop.
@@ -211,7 +304,8 @@ fun CompactNumberSpinner(
             value = shown,
             onValueChange = { editing = it },
             singleLine = true,
-            textStyle = TextStyle(fontSize = 12.sp, color = scheme.onSurface),
+            // Inherit the themed UI font family; only size/color are overridden.
+            textStyle = LocalTextStyle.current.merge(TextStyle(fontSize = 12.sp, color = scheme.onSurface)),
             cursorBrush = SolidColor(scheme.primary),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { commit() }),

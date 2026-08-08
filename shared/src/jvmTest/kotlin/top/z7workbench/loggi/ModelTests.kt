@@ -125,6 +125,45 @@ class TextTransformsTest {
     }
 
     @Test
+    fun displayRangeToRawWithoutTabsIsIdentity() {
+        assertEquals(
+            top.z7workbench.loggi.model.LineSpan(2, 5),
+            top.z7workbench.loggi.model.displayRangeToRaw("hello", 8, 2, 5),
+        )
+    }
+
+    @Test
+    fun displayRangeToRawSnapsTabInteriorToTheTab() {
+        // "a\tb" (tabStop 4) expands to "a   b": display 2 falls inside the
+        // tab's expansion → the whole tab is included.
+        assertEquals(
+            top.z7workbench.loggi.model.LineSpan(1, 3),
+            top.z7workbench.loggi.model.displayRangeToRaw("a\tb", 4, 2, 5),
+        )
+    }
+
+    @Test
+    fun displayRangeToRawRespectsCharBoundaries() {
+        assertEquals(
+            top.z7workbench.loggi.model.LineSpan(0, 1),
+            top.z7workbench.loggi.model.displayRangeToRaw("a\tb", 4, 0, 1),
+        )
+        // display [4, 5) is the char after the tab.
+        assertEquals(
+            top.z7workbench.loggi.model.LineSpan(2, 3),
+            top.z7workbench.loggi.model.displayRangeToRaw("a\tb", 4, 4, 5),
+        )
+    }
+
+    @Test
+    fun displayRangeToRawClampsBeyondTheLine() {
+        assertEquals(
+            top.z7workbench.loggi.model.LineSpan(3, 3),
+            top.z7workbench.loggi.model.displayRangeToRaw("abc", 4, 5, 99),
+        )
+    }
+
+    @Test
     fun byteSpansOnAsciiAreIdentity() {
         val spans = top.z7workbench.loggi.model.byteSpansToCharSpans("hello error", intArrayOf(6, 11))
         assertEquals(listOf(top.z7workbench.loggi.model.LineSpan(6, 11)), spans)
