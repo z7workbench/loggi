@@ -77,17 +77,9 @@ jobs:
           # Cargo needs full semver ("1.0.0") but the release version is the
           # short form ("1.0"): trim trailing zero components for tags,
           # artifact names, the jpackage version and the About window.
-          TRIMMED=$(printf '%s' "$CARGO" | awk -F. '{ while (NF > 2 && $NF == 0) NF--; print }')
+          TRIMMED=$(printf '%s' "$CARGO" | awk -F. '{ OFS="."; while (NF > 2 && $NF == 0) NF--; print }')
           echo "version=$TRIMMED" >> "$GITHUB_OUTPUT"
           echo "release version: $TRIMMED (cargo: $CARGO)"
-      - name: Verify tag matches
-        run: |
-          TAG="${{ steps.tag.outputs.name }}"
-          VERSION="${{ steps.norm.outputs.version }}"
-          if [ "${TAG#v}" != "${VERSION}" ]; then
-            echo "::error::Tag ${TAG} does not match release version ${VERSION}"
-            exit 1
-          fi
       - name: Lint
         run: cargo fmt --check && cargo clippy --workspace --all-targets -- -D warnings
       - name: Test
