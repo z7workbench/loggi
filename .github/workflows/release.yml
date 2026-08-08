@@ -1,22 +1,13 @@
 name: Release
 
 on:
-  # Build a new release whenever the user opts in via any of:
-  #   1. pushing a `v*` tag (the legacy / CI-friendly path);
-  #   2. publishing a GitHub Release — `releases > New release > Publish`;
-  #   3. running the workflow manually from the Actions tab.
-  # All three paths feed the same matrix, so a release built from a tag or a
-  # GitHub Release ends up with identical installers + SHA256SUMS.
+  # Compile on every push (any branch) and on every tag push. Only tag
+  # pushes attach installers + SHA256SUMS to the GitHub Release.
   push:
+    branches:
+      - "**"
     tags:
-      - "v*"
-  release:
-    types: [published]
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: "Tag to release (e.g. v1.0). Leave blank to use the latest tag in the repo."
-        required: false
+      - "**"
 
 permissions:
   contents: write
@@ -26,11 +17,11 @@ env:
   GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx3g
 
 jobs:
-  # Verify the resolved tag is consistent with the Cargo workspace version,
-  # and that the workspace builds green. This is the cheap fast-fail before
-  # the expensive matrix runs.
+  # Extract the release version from Cargo.toml and fast-fail on lint/test
+  # before the expensive matrix runs (version output feeds the matrix and
+  # the release job).
   verify:
-    name: Verify tag matches workspace version
+    name: Verify version + lint/test
     runs-on: ubuntu-latest
     outputs:
       name: ${{ steps.tag.outputs.name }}
@@ -46,25 +37,12 @@ jobs:
       - name: Resolve tag
         id: tag
         run: |
-          # Three entry points:
-          #   push tag             → github.ref_name
-          #   release published    → github.event.release.tag_name
-          #   workflow_dispatch    → inputs.tag (or the latest tag if blank)
-          case "${{ github.event_name }}" in
-            push)
-              echo "name=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
-              ;;
-            release)
-              echo "name=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
-              ;;
-            workflow_dispatch)
-              if [ -n "${{ inputs.tag }}" ]; then
-                echo "name=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
-              else
-                echo "name=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
-              fi
-              ;;
-          esac
+          # Only tag pushes assemble a release; branch pushes set no
+          # name (the matrix upload steps and the release job are gated on
+          # github.ref_type == 'tag').
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "name=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
       - name: Extract Cargo workspace version
         id: ver
         run: |
@@ -124,10 +102,12 @@ jobs:
       - name: Cache Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
-          cache-read-only: ${{ github.ref != 'refs/tags/v*' }}
+          cache-read-only: ${{ github.ref_type != 'tag' }}
       - name: Print version
         run: ./gradlew :desktopApp:printVersion --console=plain -q
       - name: Build ${{ matrix.format }}
+        # bash on Windows: pwsh's batch-file arg passing mangles -Pproperty=value args
+        shell: bash
         run: >
           ./gradlew
           :desktopApp:package${{ matrix.format }}
@@ -140,7 +120,13 @@ jobs:
         run: |
           set -e
           ROOT="desktopApp/build/compose/binaries/main"
-          find "$ROOT" -type f \( -name "*${{ matrix.format }}" -o -name "*.exe" -o -name "*.dmg" -o -name "*.pkg" -o -name "*.deb" -o -name "*.rpm" -o -name "*.msi" \) -printf "%p %s\n" | sort -k2 -n -r | head -1 | tee /tmp/largest.txt
+          # GNU stat (-c, Linux/Windows) vs BSD stat (-f, macOS): keep a
+          # "path size" output so the size sort below works on every runner.
+          if stat -c '%s' / >/dev/null 2>&1; then
+            find "$ROOT" -type f \( -name "*${{ matrix.format }}" -o -name "*.exe" -o -name "*.dmg" -o -name "*.pkg" -o -name "*.deb" -o -name "*.rpm" -o -name "*.msi" \) -exec stat -c '%n %s' {} \; | sort -k2 -n -r | head -1 | tee /tmp/largest.txt
+          else
+            find "$ROOT" -type f \( -name "*${{ matrix.format }}" -o -name "*.exe" -o -name "*.dmg" -o -name "*.pkg" -o -name "*.deb" -o -name "*.rpm" -o -name "*.msi" \) -exec stat -f '%N %z' {} \; | sort -k2 -n -r | head -1 | tee /tmp/largest.txt
+          fi
           ART=$(awk '{print $1}' /tmp/largest.txt)
           echo "artifact=$ART" >> "$GITHUB_OUTPUT"
       - name: Rename to release filename
@@ -154,7 +140,7 @@ jobs:
       - name: SHA256 of the installer
         shell: bash
         run: |
-          (cd "${{ github.workspace }}" && sha256sum "${{ matrix.artifact }}") | tee -a "${{ github.workspace }}/sha256sums.txt"
+          (cd "${{ github.workspace }}" && if command -v sha256sum >/dev/null 2>&1; then sha256sum "${{ matrix.artifact }}"; else shasum -a 256 "${{ matrix.artifact }}"; fi) | tee -a "${{ github.workspace }}/sha256sums.txt"
         if: runner.os != 'Windows'
       - name: SHA256 of the installer (Windows)
         shell: pwsh
@@ -176,12 +162,14 @@ jobs:
           path: ${{ matrix.artifact }}
           if-no-files-found: error
           retention-days: 14
+        if: github.ref_type == 'tag'
       - name: Upload SHA256SUMS partial
         uses: actions/upload-artifact@v4
         with:
-          name: sha256sums-partial-${{ matrix.os }}
+          name: sha256sums-partial-${{ matrix.os }}-${{ matrix.format }}
           path: sha256sums.txt
           retention-days: 14
+        if: github.ref_type == 'tag'
 
   # Single release job: collect all installer artifacts + the SHA256SUMS
   # partials, assemble the final release body, and attach everything to the
@@ -190,6 +178,7 @@ jobs:
   release:
     name: Publish GitHub Release
     needs: [verify, matrix]
+    if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -209,14 +198,13 @@ jobs:
             cat release-assets/SHA256SUMS
           fi
       - name: Build release notes (auto-generated from merged PRs)
-        if: github.event_name != 'release'
         uses: actions/github-script@v7
         with:
           script: |
             const ver = '${{ needs.verify.outputs.version }}';
             let notes = `## loggi ${ver}\n\n`;
             try {
-              const prs = await github.paginate(gitHub.rest.pulls.list, {
+              const prs = await github.paginate(github.rest.pulls.list, {
                 owner: context.repo.owner, repo: context.repo.repo,
                 state: 'closed', base: 'main', per_page: 50, sort: 'updated', direction: 'desc',
               });
@@ -239,10 +227,7 @@ jobs:
         with:
           tag_name: ${{ needs.verify.outputs.name }}
           name: "loggi ${{ needs.verify.outputs.version }}"
-          # Preserve the body the user wrote in the GitHub Release UI when
-          # the trigger was `release: published`; only auto-generate one for
-          # the tag-push / dispatch path where no release body exists yet.
-          body_path: ${{ github.event_name != 'release' && 'RELEASE_BODY.md' || '' }}
+          body_path: RELEASE_BODY.md
           fail_on_unmatched_files: true
           files: |
             release-assets/*.dmg

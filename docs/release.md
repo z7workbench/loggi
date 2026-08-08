@@ -25,21 +25,18 @@ git push origin v1.0
 
 ## Trigger
 
-`.github/workflows/release.yml` fires on any of:
+`.github/workflows/release.yml` fires on **every push** (any branch) and on
+**every tag push** (any tag name):
 
-1. **Tag push** — `git tag -a v1.0 -m "v1.0" && git push origin v1.0`.
-   The CI-friendly path; the tag is the only input, the body is
-   auto-generated.
-2. **GitHub Release published** — `Releases > New release > Publish` in the
-   UI (or `gh release create` from the CLI). The release body the user
-   wrote in the UI is preserved; the workflow only attaches the installer
-   assets to it. This is the recommended path when you want to ship
-   hand-written release notes.
-3. **Workflow dispatch** — `Run workflow` from the Actions tab. Useful for
-   re-running a build (e.g. when the signing secrets rotated) without
-   bumping the version.
+1. **Branch push** — the full matrix compiles (all installer formats) as a
+   build check; nothing is uploaded.
+2. **Tag push** — `git tag -a v1.0 -m "v1.0" && git push origin v1.0`
+   (any tag name works).
+   The full matrix builds again, and the installers + `SHA256SUMS` are
+   attached to the GitHub Release for that tag (created if missing, with
+   auto-generated notes from merged PRs).
 
-In all three cases the tag (e.g. `v1.0`) drives the package version
+In both cases the tag (e.g. `v1.0`) drives the package version
 (`-Ploggi.version=1.0`). The Cargo workspace version is full semver
 (`1.0.0`); the workflow trims trailing zero components so tags and
 installers use the short form `1.0`.

@@ -187,11 +187,10 @@ only — no MSI); macOS signing +
 notarization are best-effort and gated on `MACOS_SIGNING_*` /
 `MACOS_NOTARIZATION_*` env vars; Windows Authenticode signing is applied by
 a post-build signtool step in `release.yml`. The release workflow
-(`.github/workflows/release.yml`) fires on `v*` tag push, on
-`release: published`, or on workflow dispatch (see `docs/release.md` §
-Trigger); it matrix-builds every
-target, runs the perf-gate smoke against a 1 GiB corpus, and uploads
-installers + `SHA256SUMS` to GitHub Releases. See `docs/release.md`.
+(`.github/workflows/release.yml`) fires on every push and on tag
+push (see `docs/release.md` § Trigger); it matrix-builds every
+target, runs the perf-gate smoke against a 1 GiB corpus, and on tag
+pushes uploads installers + `SHA256SUMS` to GitHub Releases. See `docs/release.md`.
 
 M11 (2026-08-08) closed the OS file-association pass: `main.kt` accepts
 file paths as positional args (one per tab). The "Open with Loggi" verb

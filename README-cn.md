@@ -167,7 +167,7 @@ shared/                KMP 模块（JVM 目标）：全部 UI、ViewModel、设�
 desktopApp/            应用入口（main.kt）+ 原生安装包打包（图标取自 packaging/）
 packaging/             icon-512.png / icon.icns / icon.ico
 docs/                  PLAN.md、benchmarks.md、perf.md、release.md、audit-*
-.github/workflows/     ci.yml（push/PR）+ release.yml（tag / 发布 Release / dispatch）
+.github/workflows/     ci.yml（push/PR）+ release.yml（push / tag → GitHub Releases）
 ```
 
 ## 许可

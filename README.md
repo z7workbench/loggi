@@ -170,7 +170,7 @@ shared/                KMP module (JVM target): all UI, ViewModels, settings/i18
 desktopApp/            app entry (main.kt) + native installer packaging (icons in packaging/)
 packaging/             icon-512.png / icon.icns / icon.ico
 docs/                  PLAN.md, benchmarks.md, perf.md, release.md, audit-*
-.github/workflows/     ci.yml (push/PR) + release.yml (tag / release published / dispatch)
+.github/workflows/     ci.yml (push/PR) + release.yml (push / tag → GitHub Releases)
 ```
 
 ## License

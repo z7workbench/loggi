@@ -347,7 +347,8 @@ settings + highlighters windows, Dock icon) plus a Windows + Linux spot-check be
   Linux `.desktop` file (icons already per-OS). (File *association* is M11.)
 - Code signing: macOS notarization (Developer ID + stapler), Windows Authenticode
   (documented, best-effort in CI with secrets), Linux signing best-effort.
-- **Release CI** (`release.yml`, new): triggers on tag push (`v*`); jobs:
+- **Release CI** (`release.yml`, new): triggers on every push + tag push
+  (uploads to GitHub Releases only on tag push); jobs:
   - matrix build (ubuntu/macos/windows) → `packageDmg|Exe|Deb|Rpm` with release JNI profile;
   - per-OS smoke tests on the packaged app (open 10 GB file, search, follow);
   - assemble release: installers + `SHA256SUMS` + release notes → **upload to GitHub Releases**
