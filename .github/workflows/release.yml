@@ -121,8 +121,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: actions/setup-java@v4
         with:
-          distribution: temurin
+          distribution: jetbrains
           java-version: "21"
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
       - name: Cache cargo registry + target
         uses: Swatinem/rust-cache@v2
         with:

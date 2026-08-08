@@ -202,13 +202,20 @@ class LogViewUiTest {
                     Offset(80f, row9.top - row7.top + row9.height / 2),
                 )
             }
-            runOnIdle {
-                val sel = vm.selection
-                assertEquals(7L, sel?.start?.line)
-                assertEquals(1, sel?.start?.col)
-                assertEquals(9L, sel?.end?.line)
-                assertEquals(9, sel?.end?.col)
-            }
+            // Capture the actual selection. The pixel→column mapping depends
+            // on the platform's default monospace font (macOS and Linux CI
+            // metrics differ), so the expected columns and highlight rules
+            // are derived from the selection itself instead of hard-coded
+            // offsets.
+            val sel = runOnIdle { vm.selection }
+            requireNotNull(sel)
+            assertEquals(7L, sel.start.line)
+            assertEquals(9L, sel.end.line)
+            val line7Text = "row 7 ERROR"
+            val line9Text = "row 9 ERROR"
+            assertTrue(sel.start.col in 0..line7Text.length, "start col within line 7")
+            assertTrue(sel.end.col in 1..line9Text.length, "end col within line 9")
+            assertTrue(sel.end.col > sel.start.col, "end col after start col")
             onNodeWithText("row 8 ERROR").performMouseInput { rightClick() }
             awaitIdle()
             onNodeWithTag("hlMenu").performClick()
@@ -216,35 +223,38 @@ class LogViewUiTest {
             val preset = app.settings.highlightPresets.first()
             onNodeWithTag("hlPreset-$preset").performClick()
             awaitCondition("highlighters to be added") { app.settings.highlighters.size == 3 }
-            // Line 7: only the framed part [1, 11) — "ow 7 ERROR".
+            val line8Text = "row 8 ERROR"
+            val startCol = sel.start.col.coerceAtMost(line7Text.length)
+            val endCol = sel.end.col.coerceAtMost(line9Text.length)
+            // Line 7: only the framed part [startCol, end of line).
             assertEquals(
-                HighlighterRule(pattern = "ow 7 ERROR", colorArgb = preset, ignoreCase = false, anchorLine = 7, anchorStart = 1, anchorEnd = 11),
+                HighlighterRule(pattern = line7Text.substring(startCol), colorArgb = preset, ignoreCase = false, anchorLine = 7, anchorStart = startCol, anchorEnd = line7Text.length),
                 app.settings.highlighters[0],
             )
             // Line 8: fully covered → the whole line.
             assertEquals(
-                HighlighterRule(pattern = "row 8 ERROR", colorArgb = preset, ignoreCase = false, anchorLine = 8, anchorStart = 0, anchorEnd = 11),
+                HighlighterRule(pattern = line8Text, colorArgb = preset, ignoreCase = false, anchorLine = 8, anchorStart = 0, anchorEnd = line8Text.length),
                 app.settings.highlighters[1],
             )
-            // Line 9: only the framed part [0, 9) — "row 9 ERR".
+            // Line 9: only the framed part [0, endCol).
             assertEquals(
-                HighlighterRule(pattern = "row 9 ERR", colorArgb = preset, ignoreCase = false, anchorLine = 9, anchorStart = 0, anchorEnd = 9),
+                HighlighterRule(pattern = line9Text.substring(0, endCol), colorArgb = preset, ignoreCase = false, anchorLine = 9, anchorStart = 0, anchorEnd = endCol),
                 app.settings.highlighters[2],
             )
             // The anchored spans tint exactly the framed range on their own
             // lines and nothing elsewhere.
             runOnIdle {
                 assertEquals(
-                    listOf(ColoredSpan(LineSpan(1, 11), Color(preset.toInt()))),
-                    vm.computeLineSpans(7, "row 7 ERROR"),
+                    listOf(ColoredSpan(LineSpan(startCol, line7Text.length), Color(preset.toInt()))),
+                    vm.computeLineSpans(7, line7Text),
                 )
                 assertEquals(
-                    listOf(ColoredSpan(LineSpan(0, 11), Color(preset.toInt()))),
-                    vm.computeLineSpans(8, "row 8 ERROR"),
+                    listOf(ColoredSpan(LineSpan(0, line8Text.length), Color(preset.toInt()))),
+                    vm.computeLineSpans(8, line8Text),
                 )
                 assertEquals(
-                    listOf(ColoredSpan(LineSpan(0, 9), Color(preset.toInt()))),
-                    vm.computeLineSpans(9, "row 9 ERROR"),
+                    listOf(ColoredSpan(LineSpan(0, endCol), Color(preset.toInt()))),
+                    vm.computeLineSpans(9, line9Text),
                 )
                 assertTrue(vm.computeLineSpans(10, "row 10 ERROR").isEmpty())
             }
